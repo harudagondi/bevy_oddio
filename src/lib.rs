@@ -1,5 +1,6 @@
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
 //! A plugin that integrates [`oddio`] with [`bevy`].
 
@@ -14,7 +15,6 @@ use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
     Device, SampleRate,
 };
-use loader::WavLoader;
 use oddio::{Frames, FramesSignal, Handle, Mixer, Sample, Signal, SplitSignal, Stop};
 
 pub use oddio;
@@ -62,6 +62,7 @@ impl FromWorld for Audio {
             .sample_rate();
 
         task_pool.scope(|scope| scope.spawn(play(mixer, device, sample_rate)));
+
         Self {
             mixer_handle,
             sample_rate: sample_rate.0,
@@ -119,6 +120,13 @@ impl Plugin for AudioPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<Audio>();
         app.add_asset::<AudioSource>();
-        app.init_asset_loader::<WavLoader>();
+        #[cfg(feature = "flac")]
+        app.init_asset_loader::<loader::flac_loader::FlacLoader>();
+        #[cfg(feature = "mp3")]
+        app.init_asset_loader::<loader::mp3_loader::Mp3Loader>();
+        #[cfg(feature = "ogg")]
+        app.init_asset_loader::<loader::ogg_loader::OggLoader>();
+        #[cfg(feature = "wav")]
+        app.init_asset_loader::<loader::wav_loader::WavLoader>();
     }
 }
