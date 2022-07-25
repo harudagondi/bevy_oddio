@@ -22,8 +22,11 @@ impl AssetLoader for Mp3Loader {
             loop {
                 match decoder.next_frame() {
                     Ok(minimp3::Frame {
-                        data, sample_rate , ..
-                    }) => {samples.push([data[0], data[1]]); current_sample_rate = sample_rate;},
+                        data, sample_rate, ..
+                    }) => {
+                        samples.push([data[0], data[1]]);
+                        current_sample_rate = sample_rate;
+                    }
                     Err(minimp3::Error::Eof) => break,
                     Err(err) => return Err(err.into()),
                 }
