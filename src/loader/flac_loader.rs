@@ -12,8 +12,9 @@ impl AssetLoader for FlacLoader {
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), Error>> {
+        #[allow(clippy::cast_precision_loss)]
         Box::pin(async move {
-            let reader = FlacReader::new(bytes)?;
+            let mut reader = FlacReader::new(bytes)?;
 
             let sample_rate = reader.streaminfo().sample_rate;
 
