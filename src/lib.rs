@@ -3,13 +3,13 @@
 #![allow(clippy::module_name_repetitions)]
 
 //! A plugin that integrates [`oddio`] with [`bevy`].
-//! 
+//!
 //! Note that audio must have two channels or it will not work.
 //! Thus, non-wav files are more likely to break.
-//! 
+//!
 //! When implementing [`oddio::Signal`] for your types,
 //! use [`Stereo`] as your output.
-//! 
+//!
 //! See [`#1`](https://github.com/harudagondi/bevy_oddio/issues/1).
 
 use std::sync::Arc;
