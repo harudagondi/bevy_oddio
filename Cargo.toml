@@ -30,3 +30,4 @@ flac = ["claxon"]
 [dependencies.bevy]
 git = "https://github.com/bevyengine/bevy.git"
 default-features = false
+features = ["bevy_asset"]
