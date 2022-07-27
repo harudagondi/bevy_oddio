@@ -69,12 +69,14 @@ impl Default for Audio {
             .default_output_config()
             .expect("Cannot get default output config.")
             .sample_rate();
+        
+        let rate = sample_rate.0;
 
-        task_pool.scope(|scope| scope.spawn(play(mixer, device, sample_rate)));
+        task_pool.spawn(play(mixer, device, sample_rate)).detach();
 
         Self {
             mixer_handle,
-            sample_rate: sample_rate.0,
+            sample_rate: rate,
         }
     }
 }
