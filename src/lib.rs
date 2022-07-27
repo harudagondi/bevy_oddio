@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use bevy::{
-    prelude::{AddAsset, FromWorld, Plugin, World},
+    prelude::{AddAsset, Plugin},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
 };
@@ -56,9 +56,9 @@ impl Audio {
     }
 }
 
-impl FromWorld for Audio {
-    fn from_world(world: &mut World) -> Self {
-        let task_pool = world.resource::<AsyncComputeTaskPool>();
+impl Default for Audio {
+    fn default() -> Self {
+        let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
 
         let host = cpal::default_host();
