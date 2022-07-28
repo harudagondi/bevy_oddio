@@ -69,7 +69,7 @@ impl Default for Audio {
             .default_output_config()
             .expect("Cannot get default output config.")
             .sample_rate();
-        
+
         let rate = sample_rate.0;
 
         task_pool.spawn(play(mixer, device, sample_rate)).detach();
