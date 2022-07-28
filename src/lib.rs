@@ -99,9 +99,6 @@ async fn play(mixer: SplitSignal<Mixer<Stereo>>, device: Device, sample_rate: Sa
         )
         .expect("Cannot build output stream.");
     stream.play().expect("Cannot play stream.");
-
-    // Do not drop the stream
-    std::thread::sleep(std::time::Duration::MAX);
 }
 
 /// Source of audio data.
