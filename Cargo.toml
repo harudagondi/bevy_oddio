@@ -15,6 +15,7 @@ categories = ["game-development", "multimedia::audio"]
 [dependencies]
 oddio = "0.5"
 cpal = "0.13"
+parking_lot = "0.12"
 hound = { version = "3.4", optional = true }
 lewton = { version = "0.10", optional = true }
 claxon = { version = "0.4", optional = true }
@@ -28,6 +29,21 @@ ogg = ["lewton"]
 flac = ["claxon"]
 
 [dependencies.bevy]
-git = "https://github.com/bevyengine/bevy.git"
+# git = "https://github.com/bevyengine/bevy.git"
+version = "0.8"
 default-features = false
 features = ["bevy_asset"]
+
+[dev-dependencies.bevy]
+# git = "https://github.com/bevyengine/bevy.git"
+version = "0.8"
+default-features = false
+features = [
+  "render",
+  "animation",
+  "bevy_winit",
+  "bevy_gilrs",
+  "bevy_asset",
+  "filesystem_watcher",
+  "x11"
+]

@@ -12,93 +12,80 @@
 //!
 //! See [`#1`](https://github.com/harudagondi/bevy_oddio/issues/1).
 
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use bevy::{
-    prelude::{AddAsset, Plugin},
+    asset::{Asset, HandleId},
+    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin},
     reflect::TypeUuid,
-    tasks::AsyncComputeTaskPool,
 };
-use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SampleRate,
-};
-use oddio::{Frames, FramesSignal, Handle, Mixer, Sample, Signal, SplitSignal, Stop};
+use oddio::{Frames, FramesSignal, Sample, Signal};
 
 pub use oddio;
+use output::{play_queued_audio, AudioHandle, AudioHandles, AudioOutput, AudioSink, AudioSinks};
+use parking_lot::RwLock;
 
+/// [`oddio`] builtin types that can be directly used in [`Audio::play`].
+pub mod builtins;
 mod loader;
+/// Audio output
+pub mod output;
 
 /// The frame used in the `oddio` types
 pub type Stereo = [Sample; 2];
 
-/// Resource that can play any type that implements [`Signal`].
-pub struct Audio {
-    mixer_handle: Handle<Mixer<Stereo>>,
-    sample_rate: u32,
+struct AudioToPlay<Source>
+where
+    Source: ToSignal + Asset,
+{
+    source_handle: BevyHandle<Source>,
+    stop_handle: HandleId,
+    audio_handle: HandleId,
+    settings: Source::Settings,
 }
 
-impl Audio {
+/// Resource that can play any type that implements [`Signal`].
+pub struct Audio<Source = AudioSource>
+where
+    Source: ToSignal + Asset,
+{
+    queue: RwLock<VecDeque<AudioToPlay<Source>>>,
+}
+
+impl<Source> Audio<Source>
+where
+    Source: ToSignal + Asset,
+{
     /// Play the given type that implements [`Signal`].
     ///
     /// Returns a handle that can be paused or permanently stopped.
-    pub fn play<S>(&mut self, signal: S) -> Handle<Stop<S>>
-    where
-        S: Signal<Frame = Stereo> + Send + 'static,
-    {
-        self.mixer_handle.control().play(signal)
-    }
-
-    /// Returns the sample rate of the default device.
-    #[must_use]
-    pub fn sample_rate(&self) -> u32 {
-        self.sample_rate
+    pub fn play(
+        &mut self,
+        source_handle: BevyHandle<Source>,
+        settings: Source::Settings,
+    ) -> BevyHandle<AudioSink<Source>> {
+        let stop_handle = HandleId::random::<AudioSink<Source>>();
+        let audio_handle = HandleId::random::<AudioHandle<Source>>();
+        let audio_to_play = AudioToPlay {
+            source_handle,
+            stop_handle,
+            audio_handle,
+            settings,
+        };
+        self.queue.write().push_back(audio_to_play);
+        BevyHandle::<AudioSink<Source>>::weak(stop_handle)
     }
 }
 
-impl Default for Audio {
+impl<Source> Default for Audio<Source>
+where
+    Source: ToSignal + Asset,
+{
     fn default() -> Self {
-        let task_pool = AsyncComputeTaskPool::get();
-        let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
-
-        let host = cpal::default_host();
-        let device = host
-            .default_output_device()
-            .expect("No default output device available.");
-        let sample_rate = device
-            .default_output_config()
-            .expect("Cannot get default output config.")
-            .sample_rate();
-
-        let rate = sample_rate.0;
-
-        task_pool.spawn(play(mixer, device, sample_rate)).detach();
-
         Self {
-            mixer_handle,
-            sample_rate: rate,
+            queue: RwLock::default(),
         }
     }
-}
-
-#[allow(clippy::unused_async)]
-async fn play(mixer: SplitSignal<Mixer<Stereo>>, device: Device, sample_rate: SampleRate) {
-    let config = cpal::StreamConfig {
-        channels: 2,
-        sample_rate,
-        buffer_size: cpal::BufferSize::Default,
-    };
-    let stream = device
-        .build_output_stream(
-            &config,
-            move |out_flat: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                let out_stereo: &mut [Stereo] = oddio::frame_stereo(out_flat);
-                oddio::run(&mixer, sample_rate.0, out_stereo);
-            },
-            move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
-        )
-        .expect("Cannot build output stream.");
-    stream.play().expect("Cannot play stream.");
 }
 
 /// Source of audio data.
@@ -111,11 +98,27 @@ pub struct AudioSource {
     pub frames: Arc<Frames<Stereo>>,
 }
 
-impl AudioSource {
-    /// Convert the audio source to a [`FrameSignal`] that can be played using [`Audio`].
-    #[must_use]
-    pub fn to_signal(&self, start_seconds: f64) -> FramesSignal<Stereo> {
-        FramesSignal::new(self.frames.clone(), start_seconds)
+/// Trait for a type that generates a signal.
+pub trait ToSignal {
+    /// The settings needed to initialize the signal.
+    /// See [`oddio`]'s types and its `new` associated method
+    /// for examples of a `Settings`.
+    type Settings: Send + Sync;
+    /// The [`Signal`](oddio::Signal) produced by the
+    /// type implementing this trait.
+    type Signal: Signal + Send;
+
+    /// Create a new [`Signal`](oddio::Signal)
+    /// based on the implementing type.
+    fn to_signal(&self, settings: Self::Settings) -> Self::Signal;
+}
+
+impl ToSignal for AudioSource {
+    type Settings = f64;
+    type Signal = FramesSignal<Stereo>;
+
+    fn to_signal(&self, settings: Self::Settings) -> Self::Signal {
+        FramesSignal::new(self.frames.clone(), settings)
     }
 }
 
@@ -125,9 +128,12 @@ impl AudioSource {
 pub struct AudioPlugin;
 
 impl Plugin for AudioPlugin {
-    fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_resource::<Audio>();
-        app.add_asset::<AudioSource>();
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Audio<AudioSource>>()
+            .init_resource::<AudioOutput>()
+            .add_audio_source::<AudioSource>()
+            .add_audio_source::<builtins::sine::Sine>()
+            .add_audio_source::<builtins::spatial_scene::SpatialScene>();
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
         #[cfg(feature = "mp3")]
@@ -136,5 +142,30 @@ impl Plugin for AudioPlugin {
         app.init_asset_loader::<loader::ogg_loader::OggLoader>();
         #[cfg(feature = "wav")]
         app.init_asset_loader::<loader::wav_loader::WavLoader>();
+    }
+}
+
+/// Extension trait to add new audio sources implemented by users
+pub trait AudioApp {
+    /// Add support for custom audio sources.
+    fn add_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Stereo> + Send;
+}
+
+impl AudioApp for App {
+    fn add_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Stereo> + Send,
+    {
+        self.add_asset::<Source>()
+            .add_asset::<AudioSink<Source>>()
+            .add_asset::<AudioHandle<Source>>()
+            .init_resource::<Audio<Source>>()
+            .init_resource::<AudioSinks<Source>>()
+            .init_resource::<AudioHandles<Source>>()
+            .add_system_to_stage(CoreStage::PostUpdate, play_queued_audio::<Source>)
     }
 }
