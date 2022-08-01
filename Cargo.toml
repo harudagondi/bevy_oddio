@@ -34,6 +34,9 @@ version = "0.8"
 default-features = false
 features = ["bevy_asset"]
 
+[dev-dependencies]
+fastrand = "1.8"
+
 [dev-dependencies.bevy]
 # git = "https://github.com/bevyengine/bevy.git"
 version = "0.8"

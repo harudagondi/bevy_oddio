@@ -63,7 +63,10 @@ where
         &mut self,
         source_handle: BevyHandle<Source>,
         settings: Source::Settings,
-    ) -> BevyHandle<AudioSink<Source>> {
+    ) -> (
+        BevyHandle<AudioHandle<Source>>,
+        BevyHandle<AudioSink<Source>>,
+    ) {
         let stop_handle = HandleId::random::<AudioSink<Source>>();
         let audio_handle = HandleId::random::<AudioHandle<Source>>();
         let audio_to_play = AudioToPlay {
@@ -73,7 +76,10 @@ where
             settings,
         };
         self.queue.write().push_back(audio_to_play);
-        BevyHandle::<AudioSink<Source>>::weak(stop_handle)
+        (
+            BevyHandle::<AudioHandle<Source>>::weak(audio_handle),
+            BevyHandle::<AudioSink<Source>>::weak(stop_handle),
+        )
     }
 }
 
@@ -129,10 +135,9 @@ pub struct AudioPlugin;
 
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Audio<AudioSource>>()
-            .init_resource::<AudioOutput>()
+        app.init_resource::<AudioOutput>()
             .add_audio_source::<AudioSource>()
-            .add_audio_source::<builtins::sine::Sine>()
+            // .add_audio_source::<builtins::sine::Sine>()
             .add_audio_source::<builtins::spatial_scene::SpatialScene>();
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
