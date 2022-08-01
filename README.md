@@ -34,6 +34,7 @@ fn play_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
 | `bevy_oddio`  | `bevy` |
 | ------------- | ------ |
 | main          | main   |
+| 0.1.0         | 0.8    |
 
 ## License
 
