@@ -174,3 +174,7 @@ impl AudioApp for App {
             .add_system_to_stage(CoreStage::PostUpdate, play_queued_audio::<Source>)
     }
 }
+
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+struct DocTestsForReadMe; // Only used for testing code blocks in README.md

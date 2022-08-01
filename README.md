@@ -9,7 +9,7 @@ A third party Bevy plugin that integrates [`oddio`] into [Bevy].
 
 ## Usage
 
-```rust
+```rust no_run
 use bevy::prelude::*;
 use bevy_oddio::*;
 
@@ -17,13 +17,12 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin)
-        .add_startup_system()
         .add_startup_system(play_background_audio)
         .run();
 }
 
-fn play_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    audio.play(asset_server.load("background_audio.wav"));
+fn play_background_audio(asset_server: Res<AssetServer>, mut audio: ResMut<Audio>) {
+    audio.play(asset_server.load("background_audio.wav"), 0.0);
 }
 ```
 
