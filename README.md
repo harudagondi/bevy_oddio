@@ -10,8 +10,6 @@ A third party Bevy plugin that integrates [`oddio`] into [Bevy].
 ## Usage
 
 ```rust
-#![allow(clippy::precedence)]
-
 use bevy::prelude::*;
 use bevy_oddio::*;
 
@@ -25,7 +23,7 @@ fn main() {
 }
 
 fn play_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    audio.play(asset_server.load("background_audio.wav").to_signal(0.0));
+    audio.play(asset_server.load("background_audio.wav"));
 }
 ```
 
