@@ -1,9 +1,12 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, ResMut, StartupStage, Res},
+    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, StartupStage},
     reflect::TypeUuid,
     DefaultPlugins,
 };
-use bevy_oddio::{output::{AudioSink, AudioHandle}, Audio, AudioApp, AudioPlugin, Stereo, ToSignal};
+use bevy_oddio::{
+    output::{AudioHandle, AudioSink},
+    Audio, AudioApp, AudioPlugin, Stereo, ToSignal,
+};
 use oddio::Signal;
 
 #[derive(TypeUuid)]
