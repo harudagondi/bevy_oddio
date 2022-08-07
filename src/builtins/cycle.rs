@@ -1,7 +1,7 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use bevy::reflect::TypeUuid;
-use oddio::{Frames, Frame};
+use oddio::{Frame, Frames};
 
 use crate::ToSignal;
 

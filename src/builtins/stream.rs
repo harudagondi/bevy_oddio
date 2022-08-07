@@ -32,7 +32,9 @@ pub struct Settings {
 impl Settings {
     /// Generate settings for [`Stream`].
     #[must_use]
-    pub fn new(rate: u32, size: usize) -> Self { Self { rate, size } }
+    pub fn new(rate: u32, size: usize) -> Self {
+        Self { rate, size }
+    }
 }
 
 impl<T: Send + Sync + Clone + Copy + Frame> ToSignal for Stream<T> {
