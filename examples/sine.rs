@@ -14,7 +14,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin)
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, play_noise)
+        .add_startup_system_to_stage(StartupStage::PostStartup, play_sine)
         .run();
 }
 
@@ -28,7 +28,7 @@ fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {
     commands.insert_resource(SineHandle(handle));
 }
 
-fn play_noise(
+fn play_sine(
     mut commands: Commands,
     mut audio: ResMut<Audio<Sample, Sine>>,
     noise: Res<SineHandle>,
