@@ -11,26 +11,31 @@ use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
     Device, SampleRate,
 };
-use oddio::{Handle as OddioHandle, Mixer, Signal, SplitSignal, Stop};
+use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
 
-use crate::{Audio, Stereo, ToSignal};
+use crate::{
+    frames::{frame_n, FromFrame},
+    Audio, ToSignal,
+};
 
 /// Used internally in handling audio output.
-pub struct AudioOutput {
-    mixer_handle: OddioHandle<Mixer<Stereo>>,
+pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
+    mixer_handle: OddioHandle<Mixer<F>>,
 }
 
-impl AudioOutput {
+impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + 'static> AudioOutput<N, F> {
     fn play<S>(&mut self, signal: SplitSignal<S::Signal>) -> AudioSink<S>
     where
         S: ToSignal + Asset,
-        S::Signal: Signal<Frame = Stereo> + Send,
+        S::Signal: Signal<Frame = F> + Send,
     {
         AudioSink(ManuallyDrop::new(self.mixer_handle.control().play(signal)))
     }
 }
 
-impl Default for AudioOutput {
+impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Default
+    for AudioOutput<N, F>
+{
     fn default() -> Self {
         let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
@@ -51,9 +56,23 @@ impl Default for AudioOutput {
 }
 
 #[allow(clippy::unused_async)]
-async fn play(mixer: SplitSignal<Mixer<Stereo>>, device: Device, sample_rate: SampleRate) {
+async fn play<const N: usize, F>(
+    mixer: SplitSignal<Mixer<F>>,
+    device: Device,
+    sample_rate: SampleRate,
+) where
+    F: Frame + FromFrame<[Sample; N]> + 'static,
+{
+    assert_eq!(
+        64 % N,
+        0,
+        "`N` must be a power of 2 that is less than or equal to 64."
+    );
+
     let config = cpal::StreamConfig {
-        channels: 2,
+        channels: N.try_into().unwrap_or_else(|err| {
+            panic!("Number of channels provided must be reasonable. Error: {err}")
+        }),
         sample_rate,
         buffer_size: cpal::BufferSize::Default,
     };
@@ -61,8 +80,11 @@ async fn play(mixer: SplitSignal<Mixer<Stereo>>, device: Device, sample_rate: Sa
         .build_output_stream(
             &config,
             move |out_flat: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                let out_stereo: &mut [Stereo] = oddio::frame_stereo(out_flat);
-                oddio::run(&mixer, sample_rate.0, out_stereo);
+                // Safety:
+                // (1) `F` implements `FromFrame<[Sample; N]>`.
+                // (2) 64 is divisible by `N`.
+                let out_n = unsafe { frame_n(out_flat) };
+                oddio::run(&mixer, sample_rate.0, out_n);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
         )
@@ -75,9 +97,9 @@ async fn play(mixer: SplitSignal<Mixer<Stereo>>, device: Device, sample_rate: Sa
 
 /// System to play queued audio in [`Audio`].
 #[allow(clippy::needless_pass_by_value, clippy::missing_panics_doc)]
-pub fn play_queued_audio<Source>(
-    mut audio_output: ResMut<AudioOutput>,
-    audio: Res<Audio<Source>>,
+pub fn play_queued_audio<const N: usize, F, Source>(
+    mut audio_output: ResMut<AudioOutput<N, F>>,
+    audio: Res<Audio<F, Source>>,
     sources: Res<Assets<Source>>,
     mut sink_assets: ResMut<Assets<AudioSink<Source>>>,
     mut sinks: ResMut<AudioSinks<Source>>,
@@ -85,7 +107,8 @@ pub fn play_queued_audio<Source>(
     mut handles: ResMut<AudioHandles<Source>>,
 ) where
     Source: ToSignal + Asset + Send,
-    Source::Signal: Signal<Frame = Stereo> + Send,
+    Source::Signal: Signal<Frame = F> + Send,
+    F: Frame + FromFrame<[Sample; N]> + 'static,
 {
     let mut queue = audio.queue.write();
     let len = queue.len();

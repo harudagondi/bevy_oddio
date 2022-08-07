@@ -3,7 +3,7 @@ use std::io::Cursor;
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 use lewton::inside_ogg::OggStreamReader;
 
-use crate::AudioSource;
+use crate::{frames::Stereo, AudioSource};
 
 #[derive(Default)]
 pub struct OggLoader;
@@ -27,7 +27,10 @@ impl AssetLoader for OggLoader {
 
             let frames = oddio::Frames::from_iter(
                 ogg_stream_reader.ident_hdr.audio_sample_rate,
-                samples.iter().map(|packet| [packet[0], packet[1]]),
+                samples
+                    .iter()
+                    .map(|packet| [packet[0], packet[1]])
+                    .map(Stereo::from),
             );
 
             let audio_source = AudioSource { frames };

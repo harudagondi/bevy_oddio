@@ -1,7 +1,7 @@
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 use minimp3::Decoder;
 
-use crate::AudioSource;
+use crate::{frames::Stereo, AudioSource};
 
 #[derive(Default)]
 pub struct Mp3Loader;
@@ -40,9 +40,10 @@ impl AssetLoader for Mp3Loader {
                 }
             };
 
-            let samples: Vec<[f32; 2]> = samples
+            let samples: Vec<Stereo> = samples
                 .into_iter()
                 .map(|[l, r]| [convert_i32_to_f32(l), convert_i32_to_f32(r)])
+                .map(Stereo::from)
                 .collect();
 
             #[allow(clippy::cast_sign_loss)]

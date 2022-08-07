@@ -4,8 +4,9 @@ use bevy::{
     DefaultPlugins,
 };
 use bevy_oddio::{
+    frames::Stereo,
     output::{AudioHandle, AudioSink},
-    Audio, AudioApp, AudioPlugin, Stereo, ToSignal,
+    Audio, AudioApp, AudioPlugin, ToSignal,
 };
 use oddio::Signal;
 
@@ -39,7 +40,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin)
-        .add_audio_source::<Noise>()
+        .add_audio_source::<2, _, Noise>()
         .add_startup_system(init_assets)
         .add_startup_system_to_stage(StartupStage::PostStartup, play_noise)
         .run();
@@ -55,7 +56,11 @@ fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Noise>>) {
     commands.insert_resource(NoiseHandle(handle));
 }
 
-fn play_noise(mut commands: Commands, mut audio: ResMut<Audio<Noise>>, noise: Res<NoiseHandle>) {
+fn play_noise(
+    mut commands: Commands,
+    mut audio: ResMut<Audio<Stereo, Noise>>,
+    noise: Res<NoiseHandle>,
+) {
     let handles = audio.play(noise.clone(), ());
     commands.insert_resource(NoiseSink(handles.0, handles.1));
 }
