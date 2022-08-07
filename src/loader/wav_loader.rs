@@ -1,6 +1,6 @@
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 
-use crate::AudioSource;
+use crate::{frames::Stereo, AudioSource};
 
 #[derive(Default)]
 pub struct WavLoader;
@@ -37,7 +37,9 @@ impl AssetLoader for WavLoader {
             let mut samples = samples_result?;
 
             // channels are interleaved, so we put them together in stereo
-            let samples_stereo: Vec<_> = oddio::frame_stereo(&mut samples).to_vec();
+            let samples_stereo = oddio::frame_stereo(&mut samples)
+                .iter_mut()
+                .map(|frame| Stereo::from(*frame));
             let frames = oddio::Frames::from_iter(source_sample_rate, samples_stereo);
 
             let audio_source = AudioSource { frames };

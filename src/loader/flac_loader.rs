@@ -1,7 +1,7 @@
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 use claxon::FlacReader;
 
-use crate::AudioSource;
+use crate::{frames::Stereo, AudioSource};
 
 #[derive(Default)]
 pub struct FlacLoader;
@@ -30,8 +30,12 @@ impl AssetLoader for FlacLoader {
 
             let mut samples: Vec<f32> = samples.into_iter().map(convert_i32_to_f32).collect();
 
-            let frames =
-                oddio::Frames::from_iter(sample_rate, oddio::frame_stereo(&mut samples).to_vec());
+            let frames = oddio::Frames::from_iter(
+                sample_rate,
+                oddio::frame_stereo(&mut samples)
+                    .iter_mut()
+                    .map(|frame| Stereo::from(*frame)),
+            );
 
             let audio_source = AudioSource { frames };
 
