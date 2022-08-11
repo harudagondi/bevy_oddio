@@ -7,14 +7,6 @@
 
 - Describe the steps taken to achieve the objective.
 
-## Checklist
-
-- [ ] Formatted the code using `cargo fmt --all`?
-- [ ] Tested all examples manually?
-- [ ] Optional: ran [`just ci`][just]?
-
-[just]: https://github.com/casey/just
-
 ---
 
 ## Changelog
