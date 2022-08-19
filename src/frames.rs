@@ -90,7 +90,7 @@ impl_frame!(
 /// This function must uphold the following invariants:
 ///
 /// 1. `F` must have equivalent memory representation to `[Sample; N]`.
-/// 2. `N` must be a number where 64 mod `N` == 0.
+/// 2. `N` must be a number where `input.len()` mod `N` == 0.
 pub unsafe fn frame_n<F: Frame + FromFrame<[Sample; N]>, const N: usize>(
     input: &mut [Sample],
 ) -> &mut [F] {
