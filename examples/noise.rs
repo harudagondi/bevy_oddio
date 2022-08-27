@@ -3,11 +3,7 @@ use bevy::{
     reflect::TypeUuid,
     DefaultPlugins,
 };
-use bevy_oddio::{
-    frames::Stereo,
-    output::{AudioHandle, AudioSink},
-    Audio, AudioApp, AudioPlugin, ToSignal,
-};
+use bevy_oddio::{frames::Stereo, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal};
 use oddio::Signal;
 
 #[derive(TypeUuid)]
@@ -49,7 +45,7 @@ fn main() {
 #[derive(Deref)]
 struct NoiseHandle(Handle<Noise>);
 
-struct NoiseSink(Handle<AudioHandle<Noise>>, Handle<AudioSink<Noise>>);
+struct NoiseSink(Handle<AudioSink<Noise>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Noise>>) {
     let handle = assets.add(Noise);
@@ -61,6 +57,6 @@ fn play_noise(
     mut audio: ResMut<Audio<Stereo, Noise>>,
     noise: Res<NoiseHandle>,
 ) {
-    let handles = audio.play(noise.clone(), ());
-    commands.insert_resource(NoiseSink(handles.0, handles.1));
+    let handle = audio.play(noise.clone(), ());
+    commands.insert_resource(NoiseSink(handle));
 }

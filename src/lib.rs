@@ -21,7 +21,7 @@ use frames::{FromFrame, Mono, Stereo};
 use oddio::{Frame, Frames, FramesSignal, Sample, Signal};
 
 pub use oddio;
-use output::{play_queued_audio, AudioHandle, AudioHandles, AudioOutput, AudioSink, AudioSinks};
+use output::{play_queued_audio, AudioOutput, AudioSink, AudioSinks};
 use parking_lot::RwLock;
 
 /// [`oddio`] builtin types that can be directly used in [`Audio::play`].
@@ -41,7 +41,6 @@ where
 {
     source_handle: BevyHandle<Source>,
     stop_handle: HandleId,
-    audio_handle: HandleId,
     settings: Source::Settings,
 }
 
@@ -67,23 +66,15 @@ where
         &mut self,
         source_handle: BevyHandle<Source>,
         settings: Source::Settings,
-    ) -> (
-        BevyHandle<AudioHandle<Source>>,
-        BevyHandle<AudioSink<Source>>,
-    ) {
+    ) -> BevyHandle<AudioSink<Source>> {
         let stop_handle = HandleId::random::<AudioSink<Source>>();
-        let audio_handle = HandleId::random::<AudioHandle<Source>>();
         let audio_to_play = AudioToPlay {
             source_handle,
             stop_handle,
-            audio_handle,
             settings,
         };
         self.queue.write().push_back(audio_to_play);
-        (
-            BevyHandle::<AudioHandle<Source>>::weak(audio_handle),
-            BevyHandle::<AudioSink<Source>>::weak(stop_handle),
-        )
+        BevyHandle::<AudioSink<Source>>::weak(stop_handle)
     }
 }
 
@@ -178,10 +169,8 @@ impl AudioApp for App {
     {
         self.add_asset::<Source>()
             .add_asset::<AudioSink<Source>>()
-            .add_asset::<AudioHandle<Source>>()
             .init_resource::<Audio<F, Source>>()
             .init_resource::<AudioSinks<Source>>()
-            .init_resource::<AudioHandles<Source>>()
             .add_system_to_stage(CoreStage::PostUpdate, play_queued_audio::<N, F, Source>)
     }
 }

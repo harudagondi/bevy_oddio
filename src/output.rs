@@ -24,7 +24,7 @@ pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
 }
 
 impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + 'static> AudioOutput<N, F> {
-    fn play<S>(&mut self, signal: SplitSignal<S::Signal>) -> AudioSink<S>
+    fn play<S>(&mut self, signal: S::Signal) -> AudioSink<S>
     where
         S: ToSignal + Asset,
         S::Signal: Signal<Frame = F> + Send,
@@ -103,8 +103,6 @@ pub fn play_queued_audio<const N: usize, F, Source>(
     sources: Res<Assets<Source>>,
     mut sink_assets: ResMut<Assets<AudioSink<Source>>>,
     mut sinks: ResMut<AudioSinks<Source>>,
-    mut handle_assets: ResMut<Assets<AudioHandle<Source>>>,
-    mut handles: ResMut<AudioHandles<Source>>,
 ) where
     Source: ToSignal + Asset + Send,
     Source::Signal: Signal<Frame = F> + Send,
@@ -116,15 +114,10 @@ pub fn play_queued_audio<const N: usize, F, Source>(
     while i < len {
         let config = queue.pop_front().unwrap(); // This should not panic
         if let Some(audio_source) = sources.get(&config.source_handle) {
-            let (handle, split) = oddio::split(audio_source.to_signal(config.settings));
-            let sink = audio_output.play::<Source>(split);
+            let sink = audio_output.play::<Source>(audio_source.to_signal(config.settings));
             // Unlike bevy_audio, we should not drop this
             let sink_handle = sink_assets.set(config.stop_handle, sink);
             sinks.insert(sink_handle.id, sink_handle.clone());
-
-            let audio_handle = AudioHandle(ManuallyDrop::new(handle));
-            let signal_handle = handle_assets.set(config.audio_handle, audio_handle);
-            handles.insert(signal_handle.id, signal_handle.clone());
         } else {
             queue.push_back(config);
         }
@@ -136,33 +129,14 @@ pub fn play_queued_audio<const N: usize, F, Source>(
 #[derive(TypeUuid, Deref, DerefMut)]
 #[uuid = "82317ee9-8f2d-4973-bb7f-8f4a5b74cc55"]
 pub struct AudioSink<Source: ToSignal + Asset>(
-    ManuallyDrop<OddioHandle<Stop<SplitSignal<<Source as ToSignal>::Signal>>>>,
+    ManuallyDrop<OddioHandle<Stop<<Source as ToSignal>::Signal>>>,
 );
 
 /// Storage of all audio sinks.
 #[derive(Deref, DerefMut)]
 pub struct AudioSinks<Source: ToSignal + Asset>(HashMap<HandleId, BevyHandle<AudioSink<Source>>>);
 
-/// [`oddio::Handle`] asset for a given signal.  
-#[derive(TypeUuid, Deref, DerefMut)]
-#[uuid = "18b98538-c486-4355-8712-cbfc558a4994"]
-pub struct AudioHandle<Source: ToSignal + Asset>(
-    ManuallyDrop<OddioHandle<<Source as ToSignal>::Signal>>,
-);
-
-/// Storage of all audio handles.
-#[derive(Deref, DerefMut)]
-pub struct AudioHandles<Source: ToSignal + Asset>(
-    HashMap<HandleId, BevyHandle<AudioHandle<Source>>>,
-);
-
 impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {
-    fn default() -> Self {
-        Self(HashMap::default())
-    }
-}
-
-impl<Source: ToSignal + Asset> Default for AudioHandles<Source> {
     fn default() -> Self {
         Self(HashMap::default())
     }
