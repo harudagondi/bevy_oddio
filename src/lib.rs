@@ -191,7 +191,8 @@ impl AudioApp for &mut App {
     where
         Source: ToSignal + Asset + Send,
         Source::Signal: Signal<Frame = F> + Send,
-        F: Frame + FromFrame<[Sample; N]> + 'static {
+        F: Frame + FromFrame<[Sample; N]> + 'static,
+    {
         App::add_audio_source::<N, F, Source>(self);
         self
     }
