@@ -186,6 +186,17 @@ impl AudioApp for App {
     }
 }
 
+impl AudioApp for &mut App {
+    fn add_audio_source<const N: usize, F, Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = F> + Send,
+        F: Frame + FromFrame<[Sample; N]> + 'static {
+        App::add_audio_source::<N, F, Source>(self);
+        self
+    }
+}
+
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
 struct DocTestsForReadMe; // Only used for testing code blocks in README.md
