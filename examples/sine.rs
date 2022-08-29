@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_oddio::{
     builtins::sine::{self, Sine},
-    output::{AudioHandle, AudioSink},
+    output::AudioSink,
     Audio, AudioPlugin,
 };
 use oddio::Sample;
@@ -21,7 +21,7 @@ fn main() {
 #[derive(Deref)]
 struct SineHandle(Handle<Sine>);
 
-struct SineSink(Handle<AudioHandle<Sine>>, Handle<AudioSink<Sine>>);
+struct SineSink(Handle<AudioSink<Sine>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {
     let handle = assets.add(Sine);
@@ -34,6 +34,6 @@ fn play_sine(
     noise: Res<SineHandle>,
 ) {
     // Note is in A4.
-    let handles = audio.play(noise.clone(), sine::Settings::new(0.0, 440.0));
-    commands.insert_resource(SineSink(handles.0, handles.1));
+    let handle = audio.play(noise.clone(), sine::Settings::new(0.0, 440.0));
+    commands.insert_resource(SineSink(handle));
 }
