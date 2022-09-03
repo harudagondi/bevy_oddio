@@ -81,7 +81,7 @@ async fn play<const N: usize, F>(
                 );
                 // Safety:
                 // (1) `F` implements `FromFrame<[Sample; N]>`.
-                // (2) 64 is divisible by `N`.
+                // (2) out_flat.len() is divisible by `N`.
                 let out_n = unsafe { frame_n(out_flat) };
                 oddio::run(&mixer, sample_rate.0, out_n);
             },
