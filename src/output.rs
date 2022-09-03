@@ -63,12 +63,6 @@ async fn play<const N: usize, F>(
 ) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
-    assert_eq!(
-        64 % N,
-        0,
-        "`N` must be a power of 2 that is less than or equal to 64."
-    );
-
     let config = cpal::StreamConfig {
         channels: N.try_into().unwrap_or_else(|err| {
             panic!("Number of channels provided must be reasonable. Error: {err}")
@@ -80,9 +74,14 @@ async fn play<const N: usize, F>(
         .build_output_stream(
             &config,
             move |out_flat: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                assert_eq!(
+                    out_flat.len() % N,
+                    0,
+                    "`N` must be a power of 2 that is less than or equal to the output buffer in cpal."
+                );
                 // Safety:
                 // (1) `F` implements `FromFrame<[Sample; N]>`.
-                // (2) 64 is divisible by `N`.
+                // (2) out_flat.len() is divisible by `N`.
                 let out_n = unsafe { frame_n(out_flat) };
                 oddio::run(&mixer, sample_rate.0, out_n);
             },
