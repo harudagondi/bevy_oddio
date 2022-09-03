@@ -14,7 +14,7 @@ categories = ["game-development", "multimedia::audio"]
 
 [dependencies]
 oddio = "0.6"
-cpal = "0.13"
+cpal = "0.14"
 parking_lot = "0.12"
 hound = { version = "3.4", optional = true }
 lewton = { version = "0.10", optional = true }
