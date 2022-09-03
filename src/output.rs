@@ -77,7 +77,7 @@ async fn play<const N: usize, F>(
                 assert_eq!(
                     out_flat.len() % N,
                     0,
-                    "`N` must be a power of 2 that is less than or equal to 64."
+                    "`N` must be a power of 2 that is less than or equal to the output buffer in cpal."
                 );
                 // Safety:
                 // (1) `F` implements `FromFrame<[Sample; N]>`.
