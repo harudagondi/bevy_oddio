@@ -1,6 +1,9 @@
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 
-use crate::{frames::Stereo, AudioSource};
+use crate::{
+    frames::{Mono, Stereo},
+    AudioSource,
+};
 
 #[derive(Default)]
 pub struct WavLoader;
@@ -19,7 +22,7 @@ impl AssetLoader for WavLoader {
                 sample_rate: source_sample_rate,
                 sample_format,
                 bits_per_sample,
-                ..
+                channels,
             } = reader.spec();
 
             // convert the WAV data to floating point samples
@@ -36,15 +39,29 @@ impl AssetLoader for WavLoader {
             };
             let mut samples = samples_result?;
 
-            // channels are interleaved, so we put them together in stereo
-            let samples_stereo = oddio::frame_stereo(&mut samples)
-                .iter_mut()
-                .map(|frame| Stereo::from(*frame));
-            let frames = oddio::Frames::from_iter(source_sample_rate, samples_stereo);
+            match channels {
+                1 => {
+                    let samples = samples.into_iter().map(|s| Mono::from([s]));
 
-            let audio_source = AudioSource { frames };
+                    let frames = oddio::Frames::from_iter(source_sample_rate, samples);
 
-            load_context.set_default_asset(LoadedAsset::new(audio_source));
+                    let audio_source = AudioSource { frames };
+
+                    load_context.set_default_asset(LoadedAsset::new(audio_source));
+                }
+                2 => {
+                    // channels are interleaved, so we put them together in stereo
+                    let samples_stereo = oddio::frame_stereo(&mut samples)
+                        .iter_mut()
+                        .map(|frame| Stereo::from(*frame));
+                    let frames = oddio::Frames::from_iter(source_sample_rate, samples_stereo);
+
+                    let audio_source = AudioSource { frames };
+
+                    load_context.set_default_asset(LoadedAsset::new(audio_source));
+                }
+                _ => unimplemented!("bevy_oddio only have support for 1 or 2 channels only."),
+            }
 
             Ok(())
         })

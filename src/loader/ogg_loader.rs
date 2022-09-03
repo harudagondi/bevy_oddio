@@ -3,7 +3,10 @@ use std::io::Cursor;
 use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
 use lewton::inside_ogg::OggStreamReader;
 
-use crate::{frames::Stereo, AudioSource};
+use crate::{
+    frames::{Mono, Stereo},
+    AudioSource,
+};
 
 #[derive(Default)]
 pub struct OggLoader;
@@ -25,17 +28,34 @@ impl AssetLoader for OggLoader {
                 samples.extend(packets);
             }
 
-            let frames = oddio::Frames::from_iter(
-                ogg_stream_reader.ident_hdr.audio_sample_rate,
-                samples
-                    .iter()
-                    .map(|packet| [packet[0], packet[1]])
-                    .map(Stereo::from),
-            );
+            let channels = ogg_stream_reader.ident_hdr.audio_channels;
 
-            let audio_source = AudioSource { frames };
+            match channels {
+                1 => {
+                    let frames = oddio::Frames::from_iter(
+                        ogg_stream_reader.ident_hdr.audio_sample_rate,
+                        samples.iter().map(|packet| [packet[0]]).map(Mono::from),
+                    );
 
-            load_context.set_default_asset(LoadedAsset::new(audio_source));
+                    let audio_source = AudioSource { frames };
+
+                    load_context.set_default_asset(LoadedAsset::new(audio_source));
+                }
+                2 => {
+                    let frames = oddio::Frames::from_iter(
+                        ogg_stream_reader.ident_hdr.audio_sample_rate,
+                        samples
+                            .iter()
+                            .map(|packet| [packet[0], packet[1]])
+                            .map(Stereo::from),
+                    );
+
+                    let audio_source = AudioSource { frames };
+
+                    load_context.set_default_asset(LoadedAsset::new(audio_source));
+                }
+                _ => unimplemented!("bevy_oddio only have support for 1 or 2 channels only."),
+            }
 
             Ok(())
         })
