@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, StartupStage},
+    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
     reflect::TypeUuid,
     DefaultPlugins,
 };
@@ -42,9 +42,10 @@ fn main() {
         .run();
 }
 
-#[derive(Deref)]
+#[derive(Deref, Resource)]
 struct NoiseHandle(Handle<Noise>);
 
+#[derive(Resource)]
 struct NoiseSink(Handle<AudioSink<Noise>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Noise>>) {

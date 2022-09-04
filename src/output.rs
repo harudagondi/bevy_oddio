@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Res, ResMut},
+    prelude::{Assets, Deref, DerefMut, Res, ResMut, Resource},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
     utils::HashMap,
@@ -19,6 +19,7 @@ use crate::{
 };
 
 /// Used internally in handling audio output.
+#[derive(Resource)]
 pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
     mixer_handle: OddioHandle<Mixer<F>>,
 }
@@ -132,7 +133,7 @@ pub struct AudioSink<Source: ToSignal + Asset>(
 );
 
 /// Storage of all audio sinks.
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct AudioSinks<Source: ToSignal + Asset>(HashMap<HandleId, BevyHandle<AudioSink<Source>>>);
 
 impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {
