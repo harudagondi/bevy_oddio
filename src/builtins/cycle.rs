@@ -22,8 +22,8 @@ impl<T> Cycle<T> {
     }
 }
 
-/// Settings for initialization of [`Constant`] audio source.
-/// See [`Constant::new`](oddio::Constant::new) for more information.
+/// Settings for initialization of [`Cycle`] audio source.
+/// See [`Cycle::new`](oddio::Cycle::new) for more information.
 pub struct Settings<T> {
     frames: Arc<Frames<T>>,
 }
