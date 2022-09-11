@@ -1,6 +1,6 @@
 # Bevy Oddio
 
-[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking) ![Crates.io](https://img.shields.io/crates/d/bevy_oddio) ![Crates.io](https://img.shields.io/crates/l/bevy_oddio) ![Crates.io](https://img.shields.io/crates/v/bevy_oddio) ![docs.rs](https://img.shields.io/docsrs/bevy_oddio)
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking) ![Crates.io](https://img.shields.io/crates/d/bevy_oddio) ![Crates.io](https://img.shields.io/crates/l/bevy_oddio) ![Crates.io](https://img.shields.io/crates/v/bevy_oddio) ![docs.rs](https://img.shields.io/docsrs/bevy_oddio) [![CI](https://github.com/harudagondi/bevy_oddio/actions/workflows/rust.yml/badge.svg)](https://github.com/harudagondi/bevy_oddio/actions/workflows/rust.yml)
 
 A third party Bevy plugin that integrates [`oddio`] into [Bevy].
 
