@@ -43,7 +43,7 @@ jobs:
           args: --no-default-features --features ${{ matrix.feature }}
 
   test:
-    name: test-with-feature
+    name: test
     strategy:
       fail-fast: false
       matrix:
