@@ -50,14 +50,14 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
             .sample_rate();
 
         task_pool
-            .spawn(async move { play(mixer, device, sample_rate) })
+            .spawn(async move { play(mixer, &device, sample_rate) })
             .detach();
 
         Self { mixer_handle }
     }
 }
 
-fn play<const N: usize, F>(mixer: SplitSignal<Mixer<F>>, device: Device, sample_rate: SampleRate)
+fn play<const N: usize, F>(mixer: SplitSignal<Mixer<F>>, device: &Device, sample_rate: SampleRate)
 where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
