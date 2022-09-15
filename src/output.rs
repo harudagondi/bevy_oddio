@@ -49,18 +49,16 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
             .expect("Cannot get default output config.")
             .sample_rate();
 
-        task_pool.spawn(play(mixer, device, sample_rate)).detach();
+        task_pool
+            .spawn(async move { play(mixer, device, sample_rate) })
+            .detach();
 
         Self { mixer_handle }
     }
 }
 
-#[allow(clippy::unused_async)]
-async fn play<const N: usize, F>(
-    mixer: SplitSignal<Mixer<F>>,
-    device: Device,
-    sample_rate: SampleRate,
-) where
+fn play<const N: usize, F>(mixer: SplitSignal<Mixer<F>>, device: Device, sample_rate: SampleRate)
+where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
     let config = cpal::StreamConfig {
