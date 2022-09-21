@@ -9,7 +9,7 @@ use bevy::{
 };
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SampleRate,
+    Device, SupportedBufferSize, SupportedStreamConfig,
 };
 use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
 
@@ -44,12 +44,13 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
         let device = host
             .default_output_device()
             .expect("No default output device available.");
-        let sample_rate = device
+        let default_config = device
             .default_output_config()
-            .expect("Cannot get default output config.")
-            .sample_rate();
+            .expect("Cannot get default output config.");
 
-        task_pool.spawn(play(mixer, device, sample_rate)).detach();
+        task_pool
+            .spawn(play(mixer, device, default_config))
+            .detach();
 
         Self { mixer_handle }
     }
@@ -59,16 +60,25 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
 async fn play<const N: usize, F>(
     mixer: SplitSignal<Mixer<F>>,
     device: Device,
-    sample_rate: SampleRate,
+    default_config: SupportedStreamConfig,
 ) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
+    assert!(
+        N <= default_config.channels() as usize,
+        "Device cannot support more than {N} channels!"
+    );
+
+    let buffer_size = match default_config.buffer_size() {
+        SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
+        SupportedBufferSize::Unknown => cpal::BufferSize::Default,
+    };
     let config = cpal::StreamConfig {
         channels: N.try_into().unwrap_or_else(|err| {
             panic!("Number of channels provided must be reasonable. Error: {err}")
         }),
-        sample_rate,
-        buffer_size: cpal::BufferSize::Default,
+        sample_rate: default_config.sample_rate(),
+        buffer_size,
     };
     let stream = device
         .build_output_stream(
@@ -83,7 +93,7 @@ async fn play<const N: usize, F>(
                 // (1) `F` implements `FromFrame<[Sample; N]>`.
                 // (2) out_flat.len() is divisible by `N`.
                 let out_n = unsafe { frame_n(out_flat) };
-                oddio::run(&mixer, sample_rate.0, out_n);
+                oddio::run(&mixer, config.sample_rate.0, out_n);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
         )
