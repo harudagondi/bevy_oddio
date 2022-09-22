@@ -68,19 +68,12 @@ fn play<const N: usize, F>(
 ) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
-    assert!(
-        N <= supported_config_range.channels() as usize,
-        "Device cannot support more than {N} channels!"
-    );
-
     let buffer_size = match supported_config_range.buffer_size() {
         SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
         SupportedBufferSize::Unknown => cpal::BufferSize::Default,
     };
     let config = cpal::StreamConfig {
-        channels: N.try_into().unwrap_or_else(|err| {
-            panic!("Number of channels provided must be reasonable. Error: {err}")
-        }),
+        channels: supported_config_range.channels(),
         sample_rate: supported_config_range.max_sample_rate(),
         buffer_size,
     };
