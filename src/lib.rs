@@ -18,7 +18,7 @@ use bevy::{
     reflect::TypeUuid,
 };
 use frames::{FromFrame, Mono, Stereo};
-use oddio::{Frame, Frames, FramesSignal, Sample, Signal};
+use oddio::{Frame, Frames, FramesSignal, Sample, Signal, SpatialOptions};
 
 pub use oddio;
 use output::{play_queued_audio, AudioOutput, AudioSink, AudioSinks};
@@ -42,6 +42,7 @@ where
     source_handle: BevyHandle<Source>,
     stop_handle: HandleId,
     settings: Source::Settings,
+    spatial_options: Option<SpatialOptions>,
 }
 
 /// Resource that can play any type that implements [`Signal`].
@@ -72,6 +73,7 @@ where
             source_handle,
             stop_handle,
             settings,
+            spatial_options: None,
         };
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<AudioSink<Source>>::weak(stop_handle)

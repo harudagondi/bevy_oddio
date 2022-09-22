@@ -18,6 +18,9 @@ use crate::{
     Audio, ToSignal,
 };
 
+/// Spatial audio output.
+pub mod spatial;
+
 /// Used internally in handling audio output.
 pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
     mixer_handle: OddioHandle<Mixer<F>>,
@@ -40,14 +43,7 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
         let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
 
-        let host = cpal::default_host();
-        let device = host
-            .default_output_device()
-            .expect("No default output device available.");
-        let sample_rate = device
-            .default_output_config()
-            .expect("Cannot get default output config.")
-            .sample_rate();
+        let (device, sample_rate) = get_host_info();
 
         task_pool
             .spawn(async move { play(mixer, &device, sample_rate) })
@@ -111,6 +107,9 @@ pub fn play_queued_audio<const N: usize, F, Source>(
     while i < len {
         let config = queue.pop_front().unwrap(); // This should not panic
         if let Some(audio_source) = sources.get(&config.source_handle) {
+            if config.spatial_options.is_some() {
+                return;
+            }
             let sink = audio_output.play::<Source>(audio_source.to_signal(config.settings));
             // Unlike bevy_audio, we should not drop this
             let sink_handle = sink_assets.set(config.stop_handle, sink);
@@ -137,4 +136,18 @@ impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {
     fn default() -> Self {
         Self(HashMap::default())
     }
+}
+
+fn get_host_info() -> (Device, SampleRate) {
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .expect("No default output device available.");
+
+    let sample_rate = device
+        .default_output_config()
+        .expect("Cannot get default output config.")
+        .sample_rate();
+
+    (device, sample_rate)
 }

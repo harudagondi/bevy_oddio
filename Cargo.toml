@@ -33,6 +33,10 @@ version = "0.8"
 default-features = false
 features = ["bevy_asset"]
 
+[dependencies.bevy_math]
+version = "0.8"
+features = ["mint"]
+
 [dev-dependencies]
 fastrand = "1.8"
 
