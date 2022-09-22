@@ -49,7 +49,7 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
             .expect("Cannot get default output config.");
 
         task_pool
-            .spawn(async move { play(mixer, &device, default_config) })
+            .spawn(async move { play(mixer, &device, &default_config) })
             .detach();
 
         Self { mixer_handle }
@@ -59,7 +59,7 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
 fn play<const N: usize, F>(
     mixer: SplitSignal<Mixer<F>>,
     device: &Device,
-    default_config: SupportedStreamConfig,
+    default_config: &SupportedStreamConfig,
 ) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
