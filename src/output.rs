@@ -9,7 +9,7 @@ use bevy::{
 };
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SupportedBufferSize, SupportedStreamConfig,
+    Device, SupportedBufferSize, SupportedStreamConfigRange,
 };
 use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
 
@@ -44,12 +44,17 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
         let device = host
             .default_output_device()
             .expect("No default output device available.");
-        let default_config = device
-            .default_output_config()
-            .expect("Cannot get default output config.");
+        let supported_config_range = device
+            .supported_output_configs()
+            .into_iter()
+            .next()
+            .expect("Cannot get supported output configs.")
+            .into_iter()
+            .next()
+            .expect("Cannot get support output config range.");
 
         task_pool
-            .spawn(async move { play(mixer, &device, &default_config) })
+            .spawn(async move { play(mixer, &device, &supported_config_range) })
             .detach();
 
         Self { mixer_handle }
@@ -59,16 +64,16 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
 fn play<const N: usize, F>(
     mixer: SplitSignal<Mixer<F>>,
     device: &Device,
-    default_config: &SupportedStreamConfig,
+    supported_config_range: &SupportedStreamConfigRange,
 ) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
     assert!(
-        N <= default_config.channels() as usize,
+        N <= supported_config_range.channels() as usize,
         "Device cannot support more than {N} channels!"
     );
 
-    let buffer_size = match default_config.buffer_size() {
+    let buffer_size = match supported_config_range.buffer_size() {
         SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
         SupportedBufferSize::Unknown => cpal::BufferSize::Default,
     };
@@ -76,7 +81,7 @@ fn play<const N: usize, F>(
         channels: N.try_into().unwrap_or_else(|err| {
             panic!("Number of channels provided must be reasonable. Error: {err}")
         }),
-        sample_rate: default_config.sample_rate(),
+        sample_rate: supported_config_range.max_sample_rate(),
         buffer_size,
     };
     let stream = device
