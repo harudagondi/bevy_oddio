@@ -9,7 +9,7 @@ use bevy::{
 };
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SampleRate,
+    Device, SupportedBufferSize, SupportedStreamConfigRange,
 };
 use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
 
@@ -44,29 +44,38 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
         let device = host
             .default_output_device()
             .expect("No default output device available.");
-        let sample_rate = device
-            .default_output_config()
-            .expect("Cannot get default output config.")
-            .sample_rate();
+        let supported_config_range = device
+            .supported_output_configs()
+            .into_iter()
+            .next()
+            .expect("Cannot get supported output configs.")
+            .into_iter()
+            .next()
+            .expect("Cannot get support output config range.");
 
         task_pool
-            .spawn(async move { play(mixer, &device, sample_rate) })
+            .spawn(async move { play(mixer, &device, &supported_config_range) })
             .detach();
 
         Self { mixer_handle }
     }
 }
 
-fn play<const N: usize, F>(mixer: SplitSignal<Mixer<F>>, device: &Device, sample_rate: SampleRate)
-where
+fn play<const N: usize, F>(
+    mixer: SplitSignal<Mixer<F>>,
+    device: &Device,
+    supported_config_range: &SupportedStreamConfigRange,
+) where
     F: Frame + FromFrame<[Sample; N]> + 'static,
 {
+    let buffer_size = match supported_config_range.buffer_size() {
+        SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
+        SupportedBufferSize::Unknown => cpal::BufferSize::Default,
+    };
     let config = cpal::StreamConfig {
-        channels: N.try_into().unwrap_or_else(|err| {
-            panic!("Number of channels provided must be reasonable. Error: {err}")
-        }),
-        sample_rate,
-        buffer_size: cpal::BufferSize::Default,
+        channels: supported_config_range.channels(),
+        sample_rate: supported_config_range.max_sample_rate(),
+        buffer_size,
     };
     let stream = device
         .build_output_stream(
@@ -81,7 +90,7 @@ where
                 // (1) `F` implements `FromFrame<[Sample; N]>`.
                 // (2) out_flat.len() is divisible by `N`.
                 let out_n = unsafe { frame_n(out_flat) };
-                oddio::run(&mixer, sample_rate.0, out_n);
+                oddio::run(&mixer, config.sample_rate.0, out_n);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
         )
