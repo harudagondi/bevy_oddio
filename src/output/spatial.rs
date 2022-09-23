@@ -9,7 +9,7 @@ use bevy::{
 };
 use cpal::{
     traits::{DeviceTrait, StreamTrait},
-    Device, SampleRate,
+    Device, SupportedBufferSize, SupportedStreamConfigRange,
 };
 use oddio::{
     Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialOptions, SpatialScene,
@@ -42,10 +42,10 @@ impl Default for SpatialAudioOutput {
         let task_pool = AsyncComputeTaskPool::get();
         let (spatial_scene_handle, spatial_scene) = oddio::split(SpatialScene::new());
 
-        let (device, sample_rate) = get_host_info();
+        let (device, supported_config_range) = get_host_info();
 
         task_pool
-            .spawn(async move { play(spatial_scene, &device, sample_rate) })
+            .spawn(async move { play(spatial_scene, &device, &supported_config_range) })
             .detach();
 
         Self {
@@ -54,19 +54,26 @@ impl Default for SpatialAudioOutput {
     }
 }
 
-fn play(spatial_scene: SplitSignal<SpatialScene>, device: &Device, sample_rate: SampleRate) {
-    let config = cpal::StreamConfig {
-        channels: 1,
-        sample_rate,
-        buffer_size: cpal::BufferSize::Default,
+fn play(
+    spatial_scene: SplitSignal<SpatialScene>,
+    device: &Device,
+    supported_config_range: &SupportedStreamConfigRange,
+) {
+    let buffer_size = match supported_config_range.buffer_size() {
+        SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
+        SupportedBufferSize::Unknown => cpal::BufferSize::Default,
     };
-
+    let config = cpal::StreamConfig {
+        channels: supported_config_range.channels(),
+        sample_rate: supported_config_range.max_sample_rate(),
+        buffer_size,
+    };
     let stream = device
         .build_output_stream(
             &config,
             move |out: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 let out_stereo = oddio::frame_stereo(out);
-                oddio::run(&spatial_scene, sample_rate.0, out_stereo);
+                oddio::run(&spatial_scene, config.sample_rate.0, out_stereo);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
         )
@@ -78,7 +85,7 @@ fn play(spatial_scene: SplitSignal<SpatialScene>, device: &Device, sample_rate: 
 }
 
 /// System to play queued spatial audio in [`Audio`].
-pub fn play_queued_spatial_audio<const N: usize, F, Source>(
+pub fn play_queued_spatial_audio<Source>(
     mut audio_output: ResMut<SpatialAudioOutput>,
     audio: Res<Audio<Sample, Source>>,
     sources: Res<Assets<Source>>,
@@ -137,6 +144,8 @@ where
     ///
     /// The signal must implement [`oddio::Seek`]
     /// and its frame must be [`f32`].
+    /// 
+    /// Note that [`SpatialOptions`]
     ///
     /// Returns a handle that can be paused or permanently stopped.
     pub fn play_spatial(

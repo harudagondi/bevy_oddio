@@ -18,10 +18,14 @@ use bevy::{
     reflect::TypeUuid,
 };
 use frames::{FromFrame, Mono, Stereo};
-use oddio::{Frame, Frames, FramesSignal, Sample, Signal, SpatialOptions};
+use oddio::{Frame, Frames, FramesSignal, Sample, Seek, Signal, SpatialOptions};
 
 pub use oddio;
-use output::{play_queued_audio, AudioOutput, AudioSink, AudioSinks};
+use output::{
+    play_queued_audio,
+    spatial::{play_queued_spatial_audio, SpatialAudioOutput, SpatialAudioSink, SpatialAudioSinks},
+    AudioOutput, AudioSink, AudioSinks,
+};
 use parking_lot::RwLock;
 
 /// [`oddio`] builtin types that can be directly used in [`Audio::play`].
@@ -139,7 +143,8 @@ impl Plugin for AudioPlugin {
             .init_resource::<AudioOutput<2, Stereo>>()
             .add_audio_source::<1, Mono, AudioSource<Mono>>()
             .add_audio_source::<2, Stereo, AudioSource<Stereo>>()
-            .add_audio_source::<1, Sample, builtins::sine::Sine>();
+            .add_audio_source::<1, Sample, builtins::sine::Sine>()
+            .init_resource::<SpatialAudioOutput>();
         // .add_audio_source::<builtins::spatial_scene::SpatialScene>();
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
@@ -160,6 +165,11 @@ pub trait AudioApp {
         Source: ToSignal + Asset + Send,
         Source::Signal: Signal<Frame = F> + Send,
         F: Frame + FromFrame<[Sample; N]> + 'static;
+
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send;
 }
 
 impl AudioApp for App {
@@ -175,6 +185,16 @@ impl AudioApp for App {
             .init_resource::<AudioSinks<Source>>()
             .add_system_to_stage(CoreStage::PostUpdate, play_queued_audio::<N, F, Source>)
     }
+
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send,
+    {
+        self.add_asset::<SpatialAudioSink<Source>>()
+            .init_resource::<SpatialAudioSinks<Source>>()
+            .add_system_to_stage(CoreStage::PostUpdate, play_queued_spatial_audio::<Source>)
+    }
 }
 
 impl AudioApp for &mut App {
@@ -185,6 +205,15 @@ impl AudioApp for &mut App {
         F: Frame + FromFrame<[Sample; N]> + 'static,
     {
         App::add_audio_source::<N, F, Source>(self);
+        self
+    }
+
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send,
+    {
+        App::add_spatial_audio_source::<Source>(self);
         self
     }
 }
