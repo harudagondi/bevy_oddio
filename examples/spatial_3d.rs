@@ -1,9 +1,9 @@
 use bevy::{
     prelude::{
-        default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
-        Handle, Query, Res, ResMut, SpatialBundle, StartupStage, Transform, Vec2, Vec3, With,
+        default, shape, App, Assets, Camera3dBundle, Color, Commands, Component, Deref, Handle,
+        Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut, StandardMaterial,
+        StartupStage, Transform, Vec3, With,
     },
-    sprite::{Sprite, SpriteBundle},
     time::Time,
     DefaultPlugins,
 };
@@ -38,7 +38,13 @@ fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {
     commands.insert_resource(SineHandle(handle));
 }
 
-fn setup(mut commands: Commands, mut audio: ResMut<Audio<Sample, Sine>>, noise: Res<SineHandle>) {
+fn setup(
+    mut commands: Commands,
+    mut audio: ResMut<Audio<Sample, Sine>>,
+    noise: Res<SineHandle>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     // Note is in A4.
     let handle = audio.play_spatial(
         noise.clone(),
@@ -60,26 +66,45 @@ fn setup(mut commands: Commands, mut audio: ResMut<Audio<Sample, Sine>>, noise: 
     );
     commands.insert_resource(SineSink(handle));
 
+    // Listener
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::UVSphere {
+            radius: 0.2,
+            ..default()
+        })),
+        material: materials.add(Color::GREEN.into()),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        ..default()
+    });
+
+    // Emitter
     commands
-        .spawn_bundle(SpatialBundle {
-            transform: Transform::from_scale(Vec3::splat(100.0)),
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::UVSphere {
+                radius: 0.2,
+                ..default()
+            })),
+            material: materials.add(Color::BLUE.into()),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()
         })
-        .with_children(|parent| {
-            parent
-                .spawn_bundle(SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::GREEN,
-                        custom_size: Some(Vec2::new(0.3, 0.3)),
-                        ..default()
-                    },
-                    transform: Transform::from_xyz(0.0, 0.4, 0.0),
-                    ..default()
-                })
-                .insert(Emitter);
-        });
+        .insert(Emitter);
 
-    commands.spawn_bundle(Camera2dBundle::default());
+    // light
+    commands.spawn_bundle(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..default()
+    });
+
+    commands.spawn_bundle(Camera3dBundle {
+        transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
 }
 
 fn change_velocity(
@@ -90,7 +115,8 @@ fn change_velocity(
 ) {
     let mut emitter = query.single_mut();
 
-    let normalized_time = time.seconds_since_startup().sin() as f32 * 5.0;
+    let x = time.seconds_since_startup().sin() as f32 * 3.0;
+    let z = time.seconds_since_startup().cos() as f32 * 3.0;
     let delta = time.delta_seconds();
 
     let sink = match sinks.get_mut(&sink.0) {
@@ -100,14 +126,14 @@ fn change_velocity(
 
     let prev_pos = emitter.translation;
     let position = Point3 {
-        x: normalized_time,
+        x,
         y: prev_pos.y,
-        z: prev_pos.z,
+        z,
     };
     let velocity = Vector3 {
         x: (prev_pos.x - position.x) / delta,
         y: 0.0,
-        z: 0.0,
+        z: (prev_pos.z - position.z) / delta,
     };
 
     emitter.translation = Vec3::new(position.x, position.y, position.z);

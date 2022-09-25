@@ -46,7 +46,18 @@ where
     source_handle: BevyHandle<Source>,
     stop_handle: HandleId,
     settings: Source::Settings,
-    spatial_options: Option<SpatialOptions>,
+    spatial_settings: Option<SpatialSettings>,
+}
+
+struct SpatialSettings {
+    options: SpatialOptions,
+    buffered_settings: Option<BufferedSettings>,
+}
+
+struct BufferedSettings {
+    max_distance: f32,
+    rate: u32,
+    buffer_duration: f32,
 }
 
 /// Resource that can play any type that implements [`Signal`].
@@ -77,7 +88,7 @@ where
             source_handle,
             stop_handle,
             settings,
-            spatial_options: None,
+            spatial_settings: None,
         };
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<AudioSink<Source>>::weak(stop_handle)
@@ -144,8 +155,8 @@ impl Plugin for AudioPlugin {
             .add_audio_source::<1, Mono, AudioSource<Mono>>()
             .add_audio_source::<2, Stereo, AudioSource<Stereo>>()
             .add_audio_source::<1, Sample, builtins::sine::Sine>()
-            .init_resource::<SpatialAudioOutput>();
-        // .add_audio_source::<builtins::spatial_scene::SpatialScene>();
+            .init_resource::<SpatialAudioOutput>()
+            .add_spatial_audio_source::<builtins::sine::Sine>();
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
         #[cfg(feature = "mp3")]
@@ -166,6 +177,12 @@ pub trait AudioApp {
         Source::Signal: Signal<Frame = F> + Send,
         F: Frame + FromFrame<[Sample; N]> + 'static;
 
+    /// Add support for custom spatial audio sources.
+    ///
+    /// There are two requirements the signal must meet:
+    ///
+    /// 1. Its frame must be [`Sample`]. Not [`Mono`].
+    /// 2. It must implement [`Seek`].
     fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
     where
         Source: ToSignal + Asset + Send,

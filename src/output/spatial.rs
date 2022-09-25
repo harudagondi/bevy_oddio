@@ -11,12 +11,13 @@ use cpal::{
     traits::{DeviceTrait, StreamTrait},
     Device, SupportedBufferSize, SupportedStreamConfigRange,
 };
+use mint::Quaternion;
 use oddio::{
-    Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialOptions, SpatialScene,
-    SplitSignal, Stop,
+    Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialBuffered, SpatialOptions,
+    SpatialScene, SplitSignal, Stop,
 };
 
-use crate::{Audio, AudioToPlay, ToSignal};
+use crate::{Audio, AudioToPlay, BufferedSettings, SpatialSettings, ToSignal};
 
 use super::get_host_info;
 
@@ -26,6 +27,16 @@ pub struct SpatialAudioOutput {
 }
 
 impl SpatialAudioOutput {
+    // FIXME: Update when bevy 0.9
+    /// Rotate the listener.
+    ///
+    /// See [`SpatialSceneControl::set_listener_rotation`] for more information.
+    pub fn set_listener_rotation(&mut self, rotation: Quaternion<f32>) {
+        self.spatial_scene_handle
+            .control()
+            .set_listener_rotation(rotation);
+    }
+
     fn play<S>(&mut self, signal: S::Signal, options: SpatialOptions) -> SpatialAudioSink<S>
     where
         S: ToSignal + Asset,
@@ -33,6 +44,29 @@ impl SpatialAudioOutput {
     {
         SpatialAudioSink(ManuallyDrop::new(
             self.spatial_scene_handle.control().play(signal, options),
+        ))
+    }
+
+    fn play_buffered<S>(
+        &mut self,
+        signal: S::Signal,
+        options: SpatialOptions,
+        max_distance: f32,
+        rate: u32,
+        buffer_duration: f32,
+    ) -> SpatialBufferedAudioSink<S>
+    where
+        S: ToSignal + Asset,
+        S::Signal: Signal<Frame = Sample> + Send,
+    {
+        SpatialBufferedAudioSink(ManuallyDrop::new(
+            self.spatial_scene_handle.control().play_buffered(
+                signal,
+                options,
+                max_distance,
+                rate,
+                buffer_duration,
+            ),
         ))
     }
 }
@@ -85,6 +119,7 @@ fn play(
 }
 
 /// System to play queued spatial audio in [`Audio`].
+#[allow(clippy::needless_pass_by_value, clippy::missing_panics_doc)]
 pub fn play_queued_spatial_audio<Source>(
     mut audio_output: ResMut<SpatialAudioOutput>,
     audio: Res<Audio<Sample, Source>>,
@@ -101,12 +136,58 @@ pub fn play_queued_spatial_audio<Source>(
     while i < len {
         let config = queue.pop_front().unwrap(); // This should not panic
         if let Some(audio_source) = sources.get(&config.source_handle) {
-            if let Some(spatial_options) = config.spatial_options {
-                let sink = audio_output
-                    .play::<Source>(audio_source.to_signal(config.settings), spatial_options);
+            if let Some(spatial_settings) = config.spatial_settings {
+                let sink = audio_output.play::<Source>(
+                    audio_source.to_signal(config.settings),
+                    spatial_settings.options,
+                );
                 // Unlike bevy_audio, we should not drop this
                 let sink_handle = sink_assets.set(config.stop_handle, sink);
                 sinks.insert(sink_handle.id, sink_handle.clone());
+            }
+        } else {
+            queue.push_back(config);
+        }
+        i += 1;
+    }
+}
+
+/// System to play queued spatial buffered audio in [`Audio`].
+#[allow(clippy::needless_pass_by_value, clippy::missing_panics_doc)]
+pub fn play_queued_spatial_buffered_audio<Source>(
+    mut audio_output: ResMut<SpatialAudioOutput>,
+    audio: Res<Audio<Sample, Source>>,
+    sources: Res<Assets<Source>>,
+    mut sink_assets: ResMut<Assets<SpatialBufferedAudioSink<Source>>>,
+    mut sinks: ResMut<SpatialBufferedAudioSinks<Source>>,
+) where
+    Source: ToSignal + Asset + Send,
+    Source::Signal: Seek + Signal<Frame = Sample> + Send,
+{
+    let mut queue = audio.queue.write();
+    let len = queue.len();
+    let mut i = 0;
+    while i < len {
+        let config = queue.pop_front().unwrap(); // This should not panic
+        if let Some(audio_source) = sources.get(&config.source_handle) {
+            if let Some(spatial_settings) = config.spatial_settings {
+                if let Some(BufferedSettings {
+                    max_distance,
+                    rate,
+                    buffer_duration,
+                }) = spatial_settings.buffered_settings
+                {
+                    let sink = audio_output.play_buffered::<Source>(
+                        audio_source.to_signal(config.settings),
+                        spatial_settings.options,
+                        max_distance,
+                        rate,
+                        buffer_duration,
+                    );
+                    // Unlike bevy_audio, we should not drop this
+                    let sink_handle = sink_assets.set(config.stop_handle, sink);
+                    sinks.insert(sink_handle.id, sink_handle.clone());
+                }
             }
         } else {
             queue.push_back(config);
@@ -134,6 +215,25 @@ impl<Source: ToSignal + Asset> Default for SpatialAudioSinks<Source> {
     }
 }
 
+/// Asset that controls the playback of the spatial sound.
+#[derive(TypeUuid, Deref, DerefMut)]
+#[uuid = "4b135d1c-68cb-4104-b5c5-4be8bea6c46c"]
+pub struct SpatialBufferedAudioSink<Source: ToSignal + Asset>(
+    ManuallyDrop<OddioHandle<SpatialBuffered<Stop<<Source as ToSignal>::Signal>>>>,
+);
+
+/// Storage of all spatial audio sinks.
+#[derive(Deref, DerefMut)]
+pub struct SpatialBufferedAudioSinks<Source: ToSignal + Asset>(
+    HashMap<HandleId, BevyHandle<SpatialBufferedAudioSink<Source>>>,
+);
+
+impl<Source: ToSignal + Asset> Default for SpatialBufferedAudioSinks<Source> {
+    fn default() -> Self {
+        Self(HashMap::default())
+    }
+}
+
 impl<F, Source> Audio<F, Source>
 where
     Source: ToSignal + Asset,
@@ -144,8 +244,6 @@ where
     ///
     /// The signal must implement [`oddio::Seek`]
     /// and its frame must be [`f32`].
-    /// 
-    /// Note that [`SpatialOptions`]
     ///
     /// Returns a handle that can be paused or permanently stopped.
     pub fn play_spatial(
@@ -159,7 +257,42 @@ where
             source_handle,
             stop_handle,
             settings,
-            spatial_options: Some(spatial_options),
+            spatial_settings: Some(SpatialSettings {
+                options: spatial_options,
+                buffered_settings: None,
+            }),
+        };
+        self.queue.write().push_back(audio_to_play);
+        BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)
+    }
+
+    /// Play the given type that implements [`Signal`].
+    ///
+    /// The signal's frame must be [`f32`].
+    ///
+    /// Returns a handle that can be paused or permanently stopped.
+    pub fn play_spatial_buffered(
+        &mut self,
+        source_handle: BevyHandle<Source>,
+        settings: Source::Settings,
+        spatial_options: SpatialOptions,
+        max_distance: f32,
+        rate: u32,
+        buffer_duration: f32,
+    ) -> BevyHandle<SpatialAudioSink<Source>> {
+        let stop_handle = HandleId::random::<SpatialAudioSink<Source>>();
+        let audio_to_play = AudioToPlay {
+            source_handle,
+            stop_handle,
+            settings,
+            spatial_settings: Some(SpatialSettings {
+                options: spatial_options,
+                buffered_settings: Some(BufferedSettings {
+                    max_distance,
+                    rate,
+                    buffer_duration,
+                }),
+            }),
         };
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)

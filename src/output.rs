@@ -112,7 +112,7 @@ pub fn play_queued_audio<const N: usize, F, Source>(
     while i < len {
         let config = queue.pop_front().unwrap(); // This should not panic
         if let Some(audio_source) = sources.get(&config.source_handle) {
-            if config.spatial_options.is_some() {
+            if config.spatial_settings.is_some() {
                 return;
             }
             let sink = audio_output.play::<Source>(audio_source.to_signal(config.settings));
