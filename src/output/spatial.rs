@@ -31,6 +31,8 @@ impl SpatialAudioOutput {
     /// Rotate the listener.
     ///
     /// See [`SpatialSceneControl::set_listener_rotation`] for more information.
+    ///
+    /// [`SpatialSceneControl::set_listener_rotation`]: oddio::SpatialSceneControl::set_listener_rotation
     pub fn set_listener_rotation(&mut self, rotation: Quaternion<f32>) {
         self.spatial_scene_handle
             .control()
@@ -162,7 +164,7 @@ pub fn play_queued_spatial_buffered_audio<Source>(
     mut sinks: ResMut<SpatialBufferedAudioSinks<Source>>,
 ) where
     Source: ToSignal + Asset + Send,
-    Source::Signal: Seek + Signal<Frame = Sample> + Send,
+    Source::Signal: Signal<Frame = Sample> + Send,
 {
     let mut queue = audio.queue.write();
     let len = queue.len();
