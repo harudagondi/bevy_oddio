@@ -32,8 +32,8 @@ fn play_background_audio(asset_server: Res<AssetServer>, mut audio: ResMut<Audio
 | `bevy_oddio`  | `bevy` |
 | ------------- | ------ |
 | bevy_main     | main   |
-| 0.2.0         | 0.8    |
-| 0.1.0         | 0.8    |
+| 0.3.0         | 0.9    |
+| 0.1.0-0.2.0   | 0.8    |
 
 ## License
 
