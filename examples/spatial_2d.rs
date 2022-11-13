@@ -81,7 +81,7 @@ fn change_velocity(
 ) {
     let mut emitter = query.single_mut();
 
-    let normalized_time = time.elapsed_seconds_wrapped().sin() as f32 * 5.0;
+    let normalized_time = time.elapsed_seconds_wrapped().sin() * 5.0;
     let delta = time.delta_seconds();
 
     let sink = match sinks.get_mut(&sink.0) {

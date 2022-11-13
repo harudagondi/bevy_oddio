@@ -63,5 +63,5 @@ fn change_volume(
     let factor = (time.elapsed_seconds_wrapped().sin() + 1.0) / 2.0;
 
     sink.control::<oddio::Gain<_>, _>()
-        .set_amplitude_ratio(factor as f32);
+        .set_amplitude_ratio(factor);
 }
