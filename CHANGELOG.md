@@ -1,10 +1,26 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.0] - 2022-11-13
+
+### Added
+
+- New spatial audio feature:
+  - Two versions: spatial audio and spatial buffered audio.
+  - `SpatialAudioOutput`, `SpatialAudioSink`, `SpatialAudioSinks`, and `play_queued_spatial_audio` are added for spatial audio.
+  - `SpatialBufferedAudioOutput`, `SpatialBufferedAudioSink`, `SpatialBufferedAudioSinks`, and `play_queued_spatial_buffered_audio` are added for spatial buffered audio.
+  - `Audio` now has `play_spatial` and `play_spatial_buffered` methods.
+  - `AudioApp` now has a `add_spatial_audio_source` and `add_spatial_buffered_audio_source` methods implemented for `App`.
+
+### Changed
+
+- Changed the `ToSignal::Signal` type of `AudioSource` to `Gain<Speed<FramesSignal<F>>>`
 
 ## [0.2.0] - 2022-09-04
 
@@ -45,8 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SpatialScene` settings.
 
 ## [0.1.0] - 2022-07-01
+
 - Released `bevy_oddio` 0.1 🎉
 
 [Unreleased]: https://github.com/harudagondi/bevy_oddio/compare/v0.2.0..HEAD
+[0.3.0]: https://github.com/harudagondi/bevy_oddio/compare/v0.2.0..v0.3.0
 [0.2.0]: https://github.com/harudagondi/bevy_oddio/compare/v0.1.0..v0.2.0
 [0.1.0]: https://github.com/harudagondi/bevy_oddio/releases/tag/v0.1.0
