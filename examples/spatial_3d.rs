@@ -109,10 +109,7 @@ fn change_velocity(
     let z = time.elapsed_seconds_wrapped().cos() * 3.0;
     let delta = time.delta_seconds();
 
-    let sink = match sinks.get_mut(&sink.0) {
-        Some(sink) => sink,
-        None => return,
-    };
+    let Some(sink) = sinks.get_mut(&sink.0) else { return };
 
     let prev_pos = emitter.translation;
     let position = Vec3::new(x, prev_pos.y, z);

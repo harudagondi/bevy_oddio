@@ -55,10 +55,7 @@ fn change_volume(
     mut sinks: ResMut<Assets<AudioSink<SineWithGain>>>,
     time: Res<Time>,
 ) {
-    let sink = match sinks.get_mut(&sink_handle.0) {
-        Some(sink) => sink,
-        None => return,
-    };
+    let Some(sink) = sinks.get_mut(&sink_handle.0) else { return };
 
     let factor = (time.elapsed_seconds_wrapped().sin() + 1.0) / 2.0;
 
