@@ -5,10 +5,9 @@
 
 //! A plugin that integrates [`oddio`] with [`bevy`].
 //!
-//! Note that audio must have two channels or it will not work.
-//! Thus, non-wav files are more likely to break.
+//! There is an issue with loading audio files.
 //!
-//! See [`#1`](https://github.com/harudagondi/bevy_oddio/issues/1).
+//! See [`#4`](https://github.com/harudagondi/bevy_oddio/issues/4).
 
 use std::{collections::VecDeque, marker::PhantomData, sync::Arc};
 
