@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Res, ResMut},
+    prelude::{Assets, Deref, DerefMut, Res, ResMut, Resource},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
     utils::HashMap,
@@ -18,7 +18,11 @@ use crate::{
     Audio, ToSignal,
 };
 
+/// Spatial audio output.
+pub mod spatial;
+
 /// Used internally in handling audio output.
+#[derive(Resource)]
 pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
     mixer_handle: OddioHandle<Mixer<F>>,
 }
@@ -40,18 +44,7 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Defaul
         let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
 
-        let host = cpal::default_host();
-        let device = host
-            .default_output_device()
-            .expect("No default output device available.");
-        let supported_config_range = device
-            .supported_output_configs()
-            .into_iter()
-            .next()
-            .expect("Cannot get supported output configs.")
-            .into_iter()
-            .next()
-            .expect("Cannot get support output config range.");
+        let (device, supported_config_range) = get_host_info();
 
         task_pool
             .spawn(async move { play(mixer, &device, &supported_config_range) })
@@ -120,10 +113,13 @@ pub fn play_queued_audio<const N: usize, F, Source>(
     while i < len {
         let config = queue.pop_front().unwrap(); // This should not panic
         if let Some(audio_source) = sources.get(&config.source_handle) {
+            if config.spatial_settings.is_some() {
+                return;
+            }
             let sink = audio_output.play::<Source>(audio_source.to_signal(config.settings));
             // Unlike bevy_audio, we should not drop this
             let sink_handle = sink_assets.set(config.stop_handle, sink);
-            sinks.insert(sink_handle.id, sink_handle.clone());
+            sinks.insert(sink_handle.id(), sink_handle.clone());
         } else {
             queue.push_back(config);
         }
@@ -139,11 +135,28 @@ pub struct AudioSink<Source: ToSignal + Asset>(
 );
 
 /// Storage of all audio sinks.
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct AudioSinks<Source: ToSignal + Asset>(HashMap<HandleId, BevyHandle<AudioSink<Source>>>);
 
 impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {
     fn default() -> Self {
         Self(HashMap::default())
     }
+}
+
+fn get_host_info() -> (Device, SupportedStreamConfigRange) {
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .expect("No default output device available.");
+    let supported_config_range = device
+        .supported_output_configs()
+        .into_iter()
+        .next()
+        .expect("Cannot get supported output configs.")
+        .into_iter()
+        .next()
+        .expect("Cannot get support output config range.");
+
+    (device, supported_config_range)
 }

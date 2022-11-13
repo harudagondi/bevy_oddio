@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, StartupStage},
+    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
     DefaultPlugins,
 };
 use bevy_oddio::{
@@ -18,9 +18,9 @@ fn main() {
         .run();
 }
 
-#[derive(Deref)]
+#[derive(Resource, Deref)]
 struct SineHandle(Handle<Sine>);
-
+#[derive(Resource)]
 struct SineSink(Handle<AudioSink<Sine>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {

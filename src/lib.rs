@@ -14,14 +14,21 @@ use std::{collections::VecDeque, marker::PhantomData, sync::Arc};
 
 use bevy::{
     asset::{Asset, HandleId},
-    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin},
+    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin, Resource},
     reflect::TypeUuid,
 };
 use frames::{FromFrame, Mono, Stereo};
-use oddio::{Frame, Frames, FramesSignal, Sample, Signal};
+use oddio::{Frame, Frames, FramesSignal, Sample, Seek, Signal, SpatialOptions};
 
 pub use oddio;
-use output::{play_queued_audio, AudioOutput, AudioSink, AudioSinks};
+use output::{
+    play_queued_audio,
+    spatial::{
+        play_queued_spatial_audio, play_queued_spatial_buffered_audio, SpatialAudioOutput,
+        SpatialAudioSink, SpatialAudioSinks, SpatialBufferedAudioSink, SpatialBufferedAudioSinks,
+    },
+    AudioOutput, AudioSink, AudioSinks,
+};
 use parking_lot::RwLock;
 
 /// [`oddio`] builtin types that can be directly used in [`Audio::play`].
@@ -42,9 +49,22 @@ where
     source_handle: BevyHandle<Source>,
     stop_handle: HandleId,
     settings: Source::Settings,
+    spatial_settings: Option<SpatialSettings>,
+}
+
+struct SpatialSettings {
+    options: SpatialOptions,
+    buffered_settings: Option<BufferedSettings>,
+}
+
+struct BufferedSettings {
+    max_distance: f32,
+    rate: u32,
+    buffer_duration: f32,
 }
 
 /// Resource that can play any type that implements [`Signal`].
+#[derive(Resource)]
 pub struct Audio<F, Source = AudioSource<F>>
 where
     Source: ToSignal + Asset,
@@ -72,6 +92,7 @@ where
             source_handle,
             stop_handle,
             settings,
+            spatial_settings: None,
         };
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<AudioSink<Source>>::weak(stop_handle)
@@ -137,8 +158,9 @@ impl Plugin for AudioPlugin {
             .init_resource::<AudioOutput<2, Stereo>>()
             .add_audio_source::<1, Mono, AudioSource<Mono>>()
             .add_audio_source::<2, Stereo, AudioSource<Stereo>>()
-            .add_audio_source::<1, Sample, builtins::sine::Sine>();
-        // .add_audio_source::<builtins::spatial_scene::SpatialScene>();
+            .add_audio_source::<1, Sample, builtins::sine::Sine>()
+            .init_resource::<SpatialAudioOutput>()
+            .add_spatial_audio_source::<builtins::sine::Sine>();
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
         #[cfg(feature = "mp3")]
@@ -158,6 +180,35 @@ pub trait AudioApp {
         Source: ToSignal + Asset + Send,
         Source::Signal: Signal<Frame = F> + Send,
         F: Frame + FromFrame<[Sample; N]> + 'static;
+
+    /// Add support for custom spatial audio sources.
+    ///
+    /// There are two requirements the signal must meet:
+    ///
+    /// 1. Its frame must be [`Sample`]. Not [`Mono`].
+    /// 2. It must implement [`Seek`].
+    ///
+    /// See [`SpatialSceneControl::play`].
+    ///
+    /// [`SpatialSceneControl::play`]: oddio::SpatialSceneControl::play
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send;
+
+    /// Add support for custom spatial buffered audio sources.
+    ///
+    /// There is one requirement the signal must meet:
+    ///
+    /// 1. Its frame must be [`Sample`]. Not [`Mono`].
+    ///
+    /// See [`SpatialSceneControl::play_buffered`].
+    ///
+    /// [`SpatialSceneControl::play_buffered`]: oddio::SpatialSceneControl::play_buffered
+    fn add_spatial_buffered_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Send;
 }
 
 impl AudioApp for App {
@@ -173,6 +224,29 @@ impl AudioApp for App {
             .init_resource::<AudioSinks<Source>>()
             .add_system_to_stage(CoreStage::PostUpdate, play_queued_audio::<N, F, Source>)
     }
+
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send,
+    {
+        self.add_asset::<SpatialAudioSink<Source>>()
+            .init_resource::<SpatialAudioSinks<Source>>()
+            .add_system_to_stage(CoreStage::PostUpdate, play_queued_spatial_audio::<Source>)
+    }
+
+    fn add_spatial_buffered_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Send,
+    {
+        self.add_asset::<SpatialBufferedAudioSink<Source>>()
+            .init_resource::<SpatialBufferedAudioSinks<Source>>()
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                play_queued_spatial_buffered_audio::<Source>,
+            )
+    }
 }
 
 impl AudioApp for &mut App {
@@ -183,6 +257,24 @@ impl AudioApp for &mut App {
         F: Frame + FromFrame<[Sample; N]> + 'static,
     {
         App::add_audio_source::<N, F, Source>(self);
+        self
+    }
+
+    fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Seek + Send,
+    {
+        App::add_spatial_audio_source::<Source>(self);
+        self
+    }
+
+    fn add_spatial_buffered_audio_source<Source>(&mut self) -> &mut Self
+    where
+        Source: ToSignal + Asset + Send,
+        Source::Signal: Signal<Frame = Sample> + Send,
+    {
+        App::add_spatial_buffered_audio_source::<Source>(self);
         self
     }
 }
