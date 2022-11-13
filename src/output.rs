@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Res, ResMut},
+    prelude::{Assets, Deref, DerefMut, Res, ResMut, Resource},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
     utils::HashMap,
@@ -22,6 +22,7 @@ use crate::{
 pub mod spatial;
 
 /// Used internally in handling audio output.
+#[derive(Resource)]
 pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
     mixer_handle: OddioHandle<Mixer<F>>,
 }
@@ -118,7 +119,7 @@ pub fn play_queued_audio<const N: usize, F, Source>(
             let sink = audio_output.play::<Source>(audio_source.to_signal(config.settings));
             // Unlike bevy_audio, we should not drop this
             let sink_handle = sink_assets.set(config.stop_handle, sink);
-            sinks.insert(sink_handle.id, sink_handle.clone());
+            sinks.insert(sink_handle.id(), sink_handle.clone());
         } else {
             queue.push_back(config);
         }
@@ -134,7 +135,7 @@ pub struct AudioSink<Source: ToSignal + Asset>(
 );
 
 /// Storage of all audio sinks.
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct AudioSinks<Source: ToSignal + Asset>(HashMap<HandleId, BevyHandle<AudioSink<Source>>>);
 
 impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {

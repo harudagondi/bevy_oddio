@@ -1,8 +1,8 @@
 use bevy::{
     prelude::{
         default, shape, App, Assets, Camera3dBundle, Color, Commands, Component, Deref, Handle,
-        Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut, StandardMaterial,
-        StartupStage, Transform, Vec3, With,
+        Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut, Resource,
+        StandardMaterial, StartupStage, Transform, Vec3, With,
     },
     time::Time,
     DefaultPlugins,
@@ -12,7 +12,6 @@ use bevy_oddio::{
     output::spatial::SpatialAudioSink,
     Audio, AudioPlugin,
 };
-use mint::{Point3, Vector3};
 use oddio::{Sample, Spatial, SpatialOptions};
 
 fn main() {
@@ -28,9 +27,9 @@ fn main() {
 #[derive(Component)]
 struct Emitter;
 
-#[derive(Deref)]
+#[derive(Resource, Deref)]
 struct SineHandle(Handle<Sine>);
-
+#[derive(Resource)]
 struct SineSink(Handle<SpatialAudioSink<Sine>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {
@@ -49,25 +48,16 @@ fn setup(
     let handle = audio.play_spatial(
         noise.clone(),
         sine::Settings::new(0.0, 440.0),
-        // FIXME: Refactor this on bevy 0.9
         SpatialOptions {
-            position: Point3 {
-                x: 0.0,
-                y: 0.4,
-                z: 0.0,
-            },
-            velocity: Vector3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
+            position: (Vec3::Y * 0.4).into(),
+            velocity: Vec3::ZERO.into(),
             radius: 0.5,
         },
     );
     commands.insert_resource(SineSink(handle));
 
     // Listener
-    commands.spawn_bundle(PbrBundle {
+    commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::UVSphere {
             radius: 0.2,
             ..default()
@@ -79,7 +69,7 @@ fn setup(
 
     // Emitter
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::UVSphere {
                 radius: 0.2,
                 ..default()
@@ -91,7 +81,7 @@ fn setup(
         .insert(Emitter);
 
     // light
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
@@ -101,7 +91,7 @@ fn setup(
         ..default()
     });
 
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
@@ -115,8 +105,8 @@ fn change_velocity(
 ) {
     let mut emitter = query.single_mut();
 
-    let x = time.seconds_since_startup().sin() as f32 * 3.0;
-    let z = time.seconds_since_startup().cos() as f32 * 3.0;
+    let x = time.elapsed_seconds_wrapped().sin() as f32 * 3.0;
+    let z = time.elapsed_seconds_wrapped().cos() as f32 * 3.0;
     let delta = time.delta_seconds();
 
     let sink = match sinks.get_mut(&sink.0) {
@@ -125,19 +115,15 @@ fn change_velocity(
     };
 
     let prev_pos = emitter.translation;
-    let position = Point3 {
-        x,
-        y: prev_pos.y,
-        z,
-    };
-    let velocity = Vector3 {
-        x: (prev_pos.x - position.x) / delta,
-        y: 0.0,
-        z: (prev_pos.z - position.z) / delta,
-    };
+    let position = Vec3::new(x, prev_pos.y, z);
+    let velocity = Vec3::new(
+        (prev_pos.x - position.x) / delta,
+        0.0,
+        (prev_pos.z - position.z) / delta,
+    );
 
     emitter.translation = Vec3::new(position.x, position.y, position.z);
 
     sink.control::<Spatial<_>, _>()
-        .set_motion(position, velocity, false);
+        .set_motion(position.into(), velocity.into(), false);
 }

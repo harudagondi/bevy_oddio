@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Res, ResMut},
+    prelude::{Assets, Deref, DerefMut, Quat, Res, ResMut, Resource},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
     utils::HashMap,
@@ -11,7 +11,6 @@ use cpal::{
     traits::{DeviceTrait, StreamTrait},
     Device, SupportedBufferSize, SupportedStreamConfigRange,
 };
-use mint::Quaternion;
 use oddio::{
     Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialBuffered, SpatialOptions,
     SpatialScene, SplitSignal, Stop,
@@ -22,6 +21,7 @@ use crate::{Audio, AudioToPlay, BufferedSettings, SpatialSettings, ToSignal};
 use super::get_host_info;
 
 /// Used internally in handling spatial audio output.
+#[derive(Resource)]
 pub struct SpatialAudioOutput {
     spatial_scene_handle: OddioHandle<SpatialScene>,
 }
@@ -33,10 +33,10 @@ impl SpatialAudioOutput {
     /// See [`SpatialSceneControl::set_listener_rotation`] for more information.
     ///
     /// [`SpatialSceneControl::set_listener_rotation`]: oddio::SpatialSceneControl::set_listener_rotation
-    pub fn set_listener_rotation(&mut self, rotation: Quaternion<f32>) {
+    pub fn set_listener_rotation(&mut self, rotation: Quat) {
         self.spatial_scene_handle
             .control()
-            .set_listener_rotation(rotation);
+            .set_listener_rotation(rotation.into());
     }
 
     fn play<S>(&mut self, signal: S::Signal, options: SpatialOptions) -> SpatialAudioSink<S>
@@ -145,7 +145,7 @@ pub fn play_queued_spatial_audio<Source>(
                 );
                 // Unlike bevy_audio, we should not drop this
                 let sink_handle = sink_assets.set(config.stop_handle, sink);
-                sinks.insert(sink_handle.id, sink_handle.clone());
+                sinks.insert(sink_handle.id(), sink_handle.clone());
             }
         } else {
             queue.push_back(config);
@@ -188,7 +188,7 @@ pub fn play_queued_spatial_buffered_audio<Source>(
                     );
                     // Unlike bevy_audio, we should not drop this
                     let sink_handle = sink_assets.set(config.stop_handle, sink);
-                    sinks.insert(sink_handle.id, sink_handle.clone());
+                    sinks.insert(sink_handle.id(), sink_handle.clone());
                 }
             }
         } else {
@@ -206,7 +206,7 @@ pub struct SpatialAudioSink<Source: ToSignal + Asset>(
 );
 
 /// Storage of all spatial audio sinks.
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct SpatialAudioSinks<Source: ToSignal + Asset>(
     HashMap<HandleId, BevyHandle<SpatialAudioSink<Source>>>,
 );
@@ -225,7 +225,7 @@ pub struct SpatialBufferedAudioSink<Source: ToSignal + Asset>(
 );
 
 /// Storage of all spatial audio sinks.
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct SpatialBufferedAudioSinks<Source: ToSignal + Asset>(
     HashMap<HandleId, BevyHandle<SpatialBufferedAudioSink<Source>>>,
 );

@@ -14,7 +14,7 @@ use std::{collections::VecDeque, marker::PhantomData, sync::Arc};
 
 use bevy::{
     asset::{Asset, HandleId},
-    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin},
+    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin, Resource},
     reflect::TypeUuid,
 };
 use frames::{FromFrame, Mono, Stereo};
@@ -64,6 +64,7 @@ struct BufferedSettings {
 }
 
 /// Resource that can play any type that implements [`Signal`].
+#[derive(Resource)]
 pub struct Audio<F, Source = AudioSource<F>>
 where
     Source: ToSignal + Asset,

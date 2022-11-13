@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, StartupStage},
+    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
     reflect::TypeUuid,
     time::Time,
     DefaultPlugins,
@@ -31,9 +31,9 @@ fn main() {
         .run();
 }
 
-#[derive(Deref)]
+#[derive(Resource, Deref)]
 struct SineWithGainHandle(Handle<SineWithGain>);
-
+#[derive(Resource)]
 struct SineWithGainSink(Handle<AudioSink<SineWithGain>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<SineWithGain>>) {
@@ -60,7 +60,7 @@ fn change_volume(
         None => return,
     };
 
-    let factor = (time.seconds_since_startup().sin() + 1.0) / 2.0;
+    let factor = (time.elapsed_seconds_wrapped().sin() + 1.0) / 2.0;
 
     sink.control::<oddio::Gain<_>, _>()
         .set_amplitude_ratio(factor as f32);

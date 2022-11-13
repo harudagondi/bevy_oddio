@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, StartupStage},
+    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
     reflect::TypeUuid,
     DefaultPlugins,
 };
@@ -9,6 +9,7 @@ use oddio::Signal;
 #[derive(TypeUuid)]
 #[uuid = "7cc24057-b499-4f7a-8f8a-e37dfa64be32"]
 struct Noise;
+#[derive(Resource)]
 struct NoiseSignal;
 
 impl Signal for NoiseSignal {
@@ -42,9 +43,9 @@ fn main() {
         .run();
 }
 
-#[derive(Deref)]
+#[derive(Resource, Deref)]
 struct NoiseHandle(Handle<Noise>);
-
+#[derive(Resource)]
 struct NoiseSink(Handle<AudioSink<Noise>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Noise>>) {

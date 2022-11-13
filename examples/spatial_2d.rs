@@ -1,7 +1,8 @@
 use bevy::{
     prelude::{
         default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
-        Handle, Query, Res, ResMut, SpatialBundle, StartupStage, Transform, Vec2, Vec3, With,
+        Handle, Query, Res, ResMut, Resource, SpatialBundle, StartupStage, Transform, Vec2, Vec3,
+        With,
     },
     sprite::{Sprite, SpriteBundle},
     time::Time,
@@ -12,7 +13,6 @@ use bevy_oddio::{
     output::spatial::SpatialAudioSink,
     Audio, AudioPlugin,
 };
-use mint::{Point3, Vector3};
 use oddio::{Sample, Spatial, SpatialOptions};
 
 fn main() {
@@ -28,9 +28,9 @@ fn main() {
 #[derive(Component)]
 struct Emitter;
 
-#[derive(Deref)]
+#[derive(Resource, Deref)]
 struct SineHandle(Handle<Sine>);
-
+#[derive(Resource)]
 struct SineSink(Handle<SpatialAudioSink<Sine>>);
 
 fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Sine>>) {
@@ -43,31 +43,22 @@ fn setup(mut commands: Commands, mut audio: ResMut<Audio<Sample, Sine>>, noise: 
     let handle = audio.play_spatial(
         noise.clone(),
         sine::Settings::new(0.0, 440.0),
-        // FIXME: Refactor this on bevy 0.9
         SpatialOptions {
-            position: Point3 {
-                x: 0.0,
-                y: 0.4,
-                z: 0.0,
-            },
-            velocity: Vector3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
+            position: (Vec3::Y * 0.4).into(),
+            velocity: Vec3::ZERO.into(),
             radius: 0.5,
         },
     );
     commands.insert_resource(SineSink(handle));
 
     commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_scale(Vec3::splat(100.0)),
             ..default()
         })
         .with_children(|parent| {
             parent
-                .spawn_bundle(SpriteBundle {
+                .spawn(SpriteBundle {
                     sprite: Sprite {
                         color: Color::GREEN,
                         custom_size: Some(Vec2::new(0.3, 0.3)),
@@ -79,7 +70,7 @@ fn setup(mut commands: Commands, mut audio: ResMut<Audio<Sample, Sine>>, noise: 
                 .insert(Emitter);
         });
 
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 }
 
 fn change_velocity(
@@ -90,7 +81,7 @@ fn change_velocity(
 ) {
     let mut emitter = query.single_mut();
 
-    let normalized_time = time.seconds_since_startup().sin() as f32 * 5.0;
+    let normalized_time = time.elapsed_seconds_wrapped().sin() as f32 * 5.0;
     let delta = time.delta_seconds();
 
     let sink = match sinks.get_mut(&sink.0) {
@@ -99,19 +90,11 @@ fn change_velocity(
     };
 
     let prev_pos = emitter.translation;
-    let position = Point3 {
-        x: normalized_time,
-        y: prev_pos.y,
-        z: prev_pos.z,
-    };
-    let velocity = Vector3 {
-        x: (prev_pos.x - position.x) / delta,
-        y: 0.0,
-        z: 0.0,
-    };
+    let position = Vec3::new(normalized_time, prev_pos.y, prev_pos.z);
+    let velocity = Vec3::X * ((prev_pos.x - position.x) / delta);
 
     emitter.translation = Vec3::new(position.x, position.y, position.z);
 
     sink.control::<Spatial<_>, _>()
-        .set_motion(position, velocity, false);
+        .set_motion(position.into(), velocity.into(), false);
 }
