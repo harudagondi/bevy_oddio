@@ -5,10 +5,9 @@
 
 //! A plugin that integrates [`oddio`] with [`bevy`].
 //!
-//! Note that audio must have two channels or it will not work.
-//! Thus, non-wav files are more likely to break.
+//! There is an issue with loading audio files.
 //!
-//! See [`#1`](https://github.com/harudagondi/bevy_oddio/issues/1).
+//! See [`#4`](https://github.com/harudagondi/bevy_oddio/issues/4).
 
 use std::{collections::VecDeque, marker::PhantomData, sync::Arc};
 
@@ -18,7 +17,7 @@ use bevy::{
     reflect::TypeUuid,
 };
 use frames::{FromFrame, Mono, Stereo};
-use oddio::{Frame, Frames, FramesSignal, Sample, Seek, Signal, SpatialOptions};
+use oddio::{Frame, Frames, FramesSignal, Gain, Sample, Seek, Signal, SpatialOptions, Speed};
 
 pub use oddio;
 use output::{
@@ -139,10 +138,10 @@ pub trait ToSignal {
 
 impl<F: Frame + Send + Sync + Copy> ToSignal for AudioSource<F> {
     type Settings = f64;
-    type Signal = FramesSignal<F>;
+    type Signal = Gain<Speed<FramesSignal<F>>>;
 
     fn to_signal(&self, settings: Self::Settings) -> Self::Signal {
-        FramesSignal::new(self.frames.clone(), settings)
+        Gain::new(Speed::new(FramesSignal::new(self.frames.clone(), settings)))
     }
 }
 
