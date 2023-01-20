@@ -210,6 +210,8 @@ pub trait AudioApp {
         Source::Signal: Signal<Frame = Sample> + Send;
 }
 
+/// Only one of these methods should be called for a given Source. Otherwise,
+/// the wrong Audio system may deque a sound and skip playing it.
 impl AudioApp for App {
     fn add_audio_source<const N: usize, F, Source>(&mut self) -> &mut Self
     where
@@ -229,7 +231,9 @@ impl AudioApp for App {
         Source: ToSignal + Asset + Send,
         Source::Signal: Signal<Frame = Sample> + Seek + Send,
     {
-        self.add_asset::<SpatialAudioSink<Source>>()
+        self.add_asset::<Source>()
+            .add_asset::<SpatialAudioSink<Source>>()
+            .init_resource::<Audio<Sample, Source>>()
             .init_resource::<SpatialAudioSinks<Source>>()
             .add_system_to_stage(CoreStage::PostUpdate, play_queued_spatial_audio::<Source>)
     }
@@ -239,7 +243,9 @@ impl AudioApp for App {
         Source: ToSignal + Asset + Send,
         Source::Signal: Signal<Frame = Sample> + Send,
     {
-        self.add_asset::<SpatialBufferedAudioSink<Source>>()
+        self.add_asset::<Source>()
+            .add_asset::<SpatialBufferedAudioSink<Source>>()
+            .init_resource::<Audio<Sample, Source>>()
             .init_resource::<SpatialBufferedAudioSinks<Source>>()
             .add_system_to_stage(
                 CoreStage::PostUpdate,
