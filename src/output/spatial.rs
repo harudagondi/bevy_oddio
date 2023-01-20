@@ -267,7 +267,14 @@ where
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)
     }
+}
 
+impl<F, Source> Audio<F, Source>
+where
+    Source: ToSignal + Asset,
+    Source::Signal: Signal<Frame = f32>,
+    F: Frame,
+{
     /// Play the given type that implements [`Signal`].
     ///
     /// The signal's frame must be [`f32`].
