@@ -288,8 +288,8 @@ where
         max_distance: f32,
         rate: u32,
         buffer_duration: f32,
-    ) -> BevyHandle<SpatialAudioSink<Source>> {
-        let stop_handle = HandleId::random::<SpatialAudioSink<Source>>();
+    ) -> BevyHandle<SpatialBufferedAudioSink<Source>> {
+        let stop_handle = HandleId::random::<SpatialBufferedAudioSink<Source>>();
         let audio_to_play = AudioToPlay {
             source_handle,
             stop_handle,
@@ -304,6 +304,6 @@ where
             }),
         };
         self.queue.write().push_back(audio_to_play);
-        BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)
+        BevyHandle::<SpatialBufferedAudioSink<Source>>::weak(stop_handle)
     }
 }
