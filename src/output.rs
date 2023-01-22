@@ -144,11 +144,19 @@ impl<Source: ToSignal + Asset> Default for AudioSinks<Source> {
     }
 }
 
+/// Set this static before adding the bevy_oddio plugin to override cpal audio
+/// settings.
+pub static STREAM_CONFIG_RANGE_OVERRIDE: Mutex<Option<SupportedStreamConfigRange>> =
+    Mutex::new(None);
+
 fn get_host_info() -> (Device, SupportedStreamConfigRange) {
     let host = cpal::default_host();
     let device = host
         .default_output_device()
         .expect("No default output device available.");
+    if let Some(config_range) = STREAM_CONFIG_RANGE_OVERRIDE.lock().unwrap().as_ref() {
+        return (device, config_range.clone());
+    }
     let supported_config_range = device
         .supported_output_configs()
         .into_iter()
