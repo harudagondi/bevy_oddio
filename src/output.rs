@@ -1,4 +1,4 @@
-use std::mem::ManuallyDrop;
+use std::{mem::ManuallyDrop, sync::Mutex};
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
@@ -89,9 +89,8 @@ fn play<const N: usize, F>(
         )
         .expect("Cannot build output stream.");
     stream.play().expect("Cannot play stream.");
-
     // Do not drop the stream! or else there will be no audio
-    std::thread::sleep(std::time::Duration::MAX);
+    std::mem::forget(stream);
 }
 
 /// System to play queued audio in [`Audio`].

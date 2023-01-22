@@ -117,7 +117,7 @@ fn play(
     stream.play().expect("Cannot play stream.");
 
     // Do not drop the stream! or else there will be no audio
-    std::thread::sleep(std::time::Duration::MAX);
+    std::mem::forget(stream);
 }
 
 /// System to play queued spatial audio in [`Audio`].
