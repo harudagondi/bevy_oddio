@@ -30,6 +30,8 @@ use output::{
 };
 use parking_lot::RwLock;
 
+pub use cpal;
+
 /// [`oddio`] builtin types that can be directly used in [`Audio::play`].
 pub mod builtins;
 /// Newtypes for working around [bevyengine/bevy#5432](https://github.com/bevyengine/bevy/issues/5432)
