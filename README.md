@@ -17,7 +17,7 @@ use bevy_oddio::frames::Stereo;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin)
+        .add_plugin(AudioPlugin::new())
         .add_startup_system(play_background_audio)
         .run();
 }

@@ -9,13 +9,18 @@
 //!
 //! See [`#4`](https://github.com/harudagondi/bevy_oddio/issues/4).
 
-use std::{collections::VecDeque, marker::PhantomData, sync::Arc};
+use std::{
+    collections::VecDeque,
+    marker::PhantomData,
+    sync::{Arc, Mutex},
+};
 
 use bevy::{
     asset::{Asset, HandleId},
     prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin, Resource},
     reflect::TypeUuid,
 };
+use cpal::SupportedStreamConfigRange;
 use frames::{FromFrame, Mono, Stereo};
 use oddio::{Frame, Frames, FramesSignal, Gain, Sample, Seek, Signal, SpatialOptions, Speed};
 
@@ -147,10 +152,32 @@ impl<F: Frame + Send + Sync + Copy> ToSignal for AudioSource<F> {
     }
 }
 
+#[derive(Resource)]
+struct StreamConfig(SupportedStreamConfigRange);
+
 /// Adds support for audio playback in a Bevy application.
 ///
 /// Add this plugin to your Bevy app to get access to the [`Audio`] resource.
-pub struct AudioPlugin;
+#[derive(Default)]
+pub struct AudioPlugin {
+    stream_config: Mutex<Option<SupportedStreamConfigRange>>,
+}
+
+impl AudioPlugin {
+    /// Construct a default `AudioPlugin` without any specified stream configuration.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Construct an `AudioPlugin` with the specified stream configuration.
+    #[must_use]
+    pub fn with_stream_config(stream_config: SupportedStreamConfigRange) -> Self {
+        Self {
+            stream_config: Mutex::new(Some(stream_config)),
+        }
+    }
+}
 
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
@@ -162,6 +189,11 @@ impl Plugin for AudioPlugin {
             .add_audio_source::<1, Sample, builtins::sine::Sine>()
             .init_resource::<SpatialAudioOutput>()
             .add_spatial_audio_source::<builtins::sine::Sine>();
+
+        if let Some(stream_config) = self.stream_config.lock().unwrap().take() {
+            app.insert_resource(StreamConfig(stream_config));
+        }
+
         #[cfg(feature = "flac")]
         app.init_asset_loader::<loader::flac_loader::FlacLoader>();
         #[cfg(feature = "mp3")]
