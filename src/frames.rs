@@ -1,8 +1,10 @@
-use bevy::{
-    prelude::{Deref, DerefMut},
-    reflect::TypeUuid,
+use {
+    bevy::{
+        prelude::{Deref, DerefMut},
+        reflect::TypeUuid,
+    },
+    oddio::{Frame, Sample},
 };
-use oddio::{Frame, Sample};
 
 /// Internal trait to convert frames.
 pub trait FromFrame<F: Frame> {

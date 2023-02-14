@@ -1,6 +1,4 @@
-use bevy::reflect::TypeUuid;
-
-use crate::ToSignal;
+use {crate::ToSignal, bevy::reflect::TypeUuid};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Sine`](oddio::Sine)
 #[derive(TypeUuid)]

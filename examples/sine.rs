@@ -1,13 +1,15 @@
-use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
-    DefaultPlugins,
+use {
+    bevy::{
+        prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
+        DefaultPlugins,
+    },
+    bevy_oddio::{
+        builtins::sine::{self, Sine},
+        output::AudioSink,
+        Audio, AudioPlugin,
+    },
+    oddio::Sample,
 };
-use bevy_oddio::{
-    builtins::sine::{self, Sine},
-    output::AudioSink,
-    Audio, AudioPlugin,
-};
-use oddio::Sample;
 
 fn main() {
     App::new()

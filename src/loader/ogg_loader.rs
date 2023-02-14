@@ -1,11 +1,11 @@
-use std::io::Cursor;
-
-use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
-use lewton::inside_ogg::OggStreamReader;
-
-use crate::{
-    frames::{Mono, Stereo},
-    AudioSource,
+use {
+    crate::{
+        frames::{Mono, Stereo},
+        AudioSource,
+    },
+    bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
+    lewton::inside_ogg::OggStreamReader,
+    std::io::Cursor,
 };
 
 #[derive(Default)]

@@ -1,9 +1,4 @@
-use std::marker::PhantomData;
-
-use bevy::reflect::TypeUuid;
-use oddio::Frame;
-
-use crate::ToSignal;
+use {crate::ToSignal, bevy::reflect::TypeUuid, oddio::Frame, std::marker::PhantomData};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Stream`](oddio::Stream)
 #[derive(TypeUuid, Default)]
