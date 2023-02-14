@@ -17,7 +17,7 @@ use oddio::{Sample, Spatial, SpatialOptions};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin)
+        .add_plugin(AudioPlugin::new())
         .add_startup_system(init_assets)
         .add_startup_system_to_stage(StartupStage::PostStartup, setup)
         .add_system(change_velocity)

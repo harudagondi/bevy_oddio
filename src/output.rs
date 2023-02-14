@@ -2,7 +2,7 @@ use std::mem::ManuallyDrop;
 
 use bevy::{
     asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Res, ResMut, Resource},
+    prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
     utils::HashMap,
@@ -15,7 +15,7 @@ use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, St
 
 use crate::{
     frames::{frame_n, FromFrame},
-    Audio, ToSignal,
+    Audio, StreamConfig, ToSignal,
 };
 
 /// Spatial audio output.
@@ -37,14 +37,18 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + 'static> AudioOutput<N,
     }
 }
 
-impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> Default
+impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> FromWorld
     for AudioOutput<N, F>
 {
-    fn default() -> Self {
+    fn from_world(world: &mut bevy::prelude::World) -> Self {
         let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
 
-        let (device, supported_config_range) = get_host_info();
+        let (device, mut supported_config_range) = get_host_info();
+
+        if let Some(stream_config) = world.get_resource::<StreamConfig>() {
+            supported_config_range = stream_config.0.clone();
+        }
 
         task_pool
             .spawn(async move { play(mixer, &device, &supported_config_range) })
@@ -89,9 +93,8 @@ fn play<const N: usize, F>(
         )
         .expect("Cannot build output stream.");
     stream.play().expect("Cannot play stream.");
-
     // Do not drop the stream! or else there will be no audio
-    std::thread::sleep(std::time::Duration::MAX);
+    std::mem::forget(stream);
 }
 
 /// System to play queued audio in [`Audio`].
@@ -154,7 +157,6 @@ fn get_host_info() -> (Device, SupportedStreamConfigRange) {
         .into_iter()
         .next()
         .expect("Cannot get supported output configs.")
-        .into_iter()
         .next()
         .expect("Cannot get support output config range.");
 

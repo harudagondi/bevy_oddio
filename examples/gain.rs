@@ -23,7 +23,7 @@ impl ToSignal for SineWithGain {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin)
+        .add_plugin(AudioPlugin::new())
         .add_audio_source::<1, _, SineWithGain>()
         .add_startup_system(init_assets)
         .add_startup_system_to_stage(StartupStage::PostStartup, play_sine_with_gain)

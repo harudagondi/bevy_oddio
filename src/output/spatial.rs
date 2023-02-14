@@ -117,7 +117,7 @@ fn play(
     stream.play().expect("Cannot play stream.");
 
     // Do not drop the stream! or else there will be no audio
-    std::thread::sleep(std::time::Duration::MAX);
+    std::mem::forget(stream);
 }
 
 /// System to play queued spatial audio in [`Audio`].
@@ -267,7 +267,14 @@ where
         self.queue.write().push_back(audio_to_play);
         BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)
     }
+}
 
+impl<F, Source> Audio<F, Source>
+where
+    Source: ToSignal + Asset,
+    Source::Signal: Signal<Frame = f32>,
+    F: Frame,
+{
     /// Play the given type that implements [`Signal`].
     ///
     /// The signal's frame must be [`f32`].
@@ -281,8 +288,8 @@ where
         max_distance: f32,
         rate: u32,
         buffer_duration: f32,
-    ) -> BevyHandle<SpatialAudioSink<Source>> {
-        let stop_handle = HandleId::random::<SpatialAudioSink<Source>>();
+    ) -> BevyHandle<SpatialBufferedAudioSink<Source>> {
+        let stop_handle = HandleId::random::<SpatialBufferedAudioSink<Source>>();
         let audio_to_play = AudioToPlay {
             source_handle,
             stop_handle,
@@ -297,6 +304,6 @@ where
             }),
         };
         self.queue.write().push_back(audio_to_play);
-        BevyHandle::<SpatialAudioSink<Source>>::weak(stop_handle)
+        BevyHandle::<SpatialBufferedAudioSink<Source>>::weak(stop_handle)
     }
 }
