@@ -1,8 +1,4 @@
-use std::marker::PhantomData;
-
-use bevy::reflect::TypeUuid;
-
-use crate::ToSignal;
+use {crate::ToSignal, bevy::reflect::TypeUuid, std::marker::PhantomData};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Constant`](oddio::Constant)
 #[derive(TypeUuid, Default)]

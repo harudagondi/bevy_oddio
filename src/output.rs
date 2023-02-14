@@ -1,21 +1,21 @@
-use std::mem::ManuallyDrop;
-
-use bevy::{
-    asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
-    reflect::TypeUuid,
-    tasks::AsyncComputeTaskPool,
-    utils::HashMap,
-};
-use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SupportedBufferSize, SupportedStreamConfigRange,
-};
-use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
-
-use crate::{
-    frames::{frame_n, FromFrame},
-    Audio, StreamConfig, ToSignal,
+use {
+    crate::{
+        frames::{frame_n, FromFrame},
+        Audio, StreamConfig, ToSignal,
+    },
+    bevy::{
+        asset::{Asset, Handle as BevyHandle, HandleId},
+        prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
+        reflect::TypeUuid,
+        tasks::AsyncComputeTaskPool,
+        utils::HashMap,
+    },
+    cpal::{
+        traits::{DeviceTrait, HostTrait, StreamTrait},
+        Device, SupportedBufferSize, SupportedStreamConfigRange,
+    },
+    oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop},
+    std::mem::ManuallyDrop,
 };
 
 /// Spatial audio output.

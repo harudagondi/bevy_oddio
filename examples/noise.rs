@@ -1,10 +1,12 @@
-use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
-    reflect::TypeUuid,
-    DefaultPlugins,
+use {
+    bevy::{
+        prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
+        reflect::TypeUuid,
+        DefaultPlugins,
+    },
+    bevy_oddio::{frames::Stereo, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal},
+    oddio::Signal,
 };
-use bevy_oddio::{frames::Stereo, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal};
-use oddio::Signal;
 
 #[derive(TypeUuid)]
 #[uuid = "7cc24057-b499-4f7a-8f8a-e37dfa64be32"]

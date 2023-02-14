@@ -9,33 +9,32 @@
 //!
 //! See [`#4`](https://github.com/harudagondi/bevy_oddio/issues/4).
 
-use std::{
-    collections::VecDeque,
-    marker::PhantomData,
-    sync::{Arc, Mutex},
-};
-
-use bevy::{
-    asset::{Asset, HandleId},
-    prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin, Resource},
-    reflect::TypeUuid,
-};
-use cpal::SupportedStreamConfigRange;
-use frames::{FromFrame, Mono, Stereo};
-use oddio::{Frame, Frames, FramesSignal, Gain, Sample, Seek, Signal, SpatialOptions, Speed};
-
-pub use oddio;
-use output::{
-    play_queued_audio,
-    spatial::{
-        play_queued_spatial_audio, play_queued_spatial_buffered_audio, SpatialAudioOutput,
-        SpatialAudioSink, SpatialAudioSinks, SpatialBufferedAudioSink, SpatialBufferedAudioSinks,
+use {
+    bevy::{
+        asset::{Asset, HandleId},
+        prelude::{AddAsset, App, CoreStage, Handle as BevyHandle, Plugin, Resource},
+        reflect::TypeUuid,
     },
-    AudioOutput, AudioSink, AudioSinks,
+    cpal::SupportedStreamConfigRange,
+    frames::{FromFrame, Mono, Stereo},
+    oddio::{Frame, Frames, FramesSignal, Gain, Sample, Seek, Signal, SpatialOptions, Speed},
+    output::{
+        play_queued_audio,
+        spatial::{
+            play_queued_spatial_audio, play_queued_spatial_buffered_audio, SpatialAudioOutput,
+            SpatialAudioSink, SpatialAudioSinks, SpatialBufferedAudioSink,
+            SpatialBufferedAudioSinks,
+        },
+        AudioOutput, AudioSink, AudioSinks,
+    },
+    parking_lot::RwLock,
+    std::{
+        collections::VecDeque,
+        marker::PhantomData,
+        sync::{Arc, Mutex},
+    },
 };
-use parking_lot::RwLock;
-
-pub use cpal;
+pub use {cpal, oddio};
 
 /// [`oddio`] builtin types that can be directly used in [`Audio::play`].
 pub mod builtins;
