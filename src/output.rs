@@ -90,6 +90,7 @@ fn play<const N: usize, F>(
                 oddio::run(&mixer, config.sample_rate.0, out_n);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
+            None
         )
         .expect("Cannot build output stream.");
     stream.play().expect("Cannot play stream.");
