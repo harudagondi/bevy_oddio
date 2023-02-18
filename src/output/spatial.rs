@@ -111,6 +111,7 @@ fn play(
                 oddio::run(&spatial_scene, config.sample_rate.0, out_stereo);
             },
             move |err| bevy::utils::tracing::error!("Error in cpal: {err:?}"),
+            None,
         )
         .expect("Cannot build output stream.");
     stream.play().expect("Cannot play stream.");
