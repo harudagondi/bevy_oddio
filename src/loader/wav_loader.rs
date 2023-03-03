@@ -1,8 +1,9 @@
-use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
-
-use crate::{
-    frames::{Mono, Stereo},
-    AudioSource,
+use {
+    crate::{
+        frames::{Mono, Stereo},
+        AudioSource,
+    },
+    bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
 };
 
 #[derive(Default)]

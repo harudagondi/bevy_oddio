@@ -1,9 +1,10 @@
-use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
-use claxon::FlacReader;
-
-use crate::{
-    frames::{Mono, Stereo},
-    AudioSource,
+use {
+    crate::{
+        frames::{Mono, Stereo},
+        AudioSource,
+    },
+    bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
+    claxon::FlacReader,
 };
 
 #[derive(Default)]

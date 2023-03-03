@@ -1,12 +1,15 @@
-use bevy::{
-    prelude::{
-        App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource, StartupSet,
+use {
+    bevy::{
+        prelude::{
+            App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource,
+            StartupSet,
+        },
+        reflect::TypeUuid,
+        DefaultPlugins,
     },
-    reflect::TypeUuid,
-    DefaultPlugins,
+    bevy_oddio::{output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal},
+    oddio::{Sample, Signal},
 };
-use bevy_oddio::{frames::Stereo, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal};
-use oddio::Signal;
 
 #[derive(TypeUuid)]
 #[uuid = "7cc24057-b499-4f7a-8f8a-e37dfa64be32"]
@@ -15,7 +18,7 @@ struct Noise;
 struct NoiseSignal;
 
 impl Signal for NoiseSignal {
-    type Frame = Stereo;
+    type Frame = [Sample; 2];
 
     fn sample(&self, _interval: f32, out: &mut [Self::Frame]) {
         for out_frame in out {
@@ -39,7 +42,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
-        .add_audio_source::<2, _, Noise>()
+        .add_audio_source::<_, Noise>()
         .add_startup_system(init_assets)
         .add_startup_system(play_noise.in_base_set(StartupSet::PostStartup))
         .run();
@@ -57,7 +60,7 @@ fn init_assets(mut commands: Commands, mut assets: ResMut<Assets<Noise>>) {
 
 fn play_noise(
     mut commands: Commands,
-    mut audio: ResMut<Audio<Stereo, Noise>>,
+    mut audio: ResMut<Audio<[Sample; 2], Noise>>,
     noise: Res<NoiseHandle>,
 ) {
     let handle = audio.play(noise.clone(), ());

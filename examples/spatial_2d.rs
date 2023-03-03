@@ -1,19 +1,21 @@
-use bevy::{
-    prelude::{
-        default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
-        Handle, IntoSystemConfig, Query, Res, ResMut, Resource, SpatialBundle, StartupSet,
-        Transform, Vec2, Vec3, With,
+use {
+    bevy::{
+        prelude::{
+            default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
+            Handle, IntoSystemConfig, Query, Res, ResMut, Resource, SpatialBundle, StartupSet,
+            Transform, Vec2, Vec3, With,
+        },
+        sprite::{Sprite, SpriteBundle},
+        time::Time,
+        DefaultPlugins,
     },
-    sprite::{Sprite, SpriteBundle},
-    time::Time,
-    DefaultPlugins,
+    bevy_oddio::{
+        builtins::sine::{self, Sine},
+        output::spatial::SpatialAudioSink,
+        Audio, AudioPlugin,
+    },
+    oddio::{Sample, Spatial, SpatialOptions},
 };
-use bevy_oddio::{
-    builtins::sine::{self, Sine},
-    output::spatial::SpatialAudioSink,
-    Audio, AudioPlugin,
-};
-use oddio::{Sample, Spatial, SpatialOptions};
 
 fn main() {
     App::new()

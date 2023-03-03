@@ -1,13 +1,16 @@
-use bevy::{
-    prelude::{
-        App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource, StartupSet,
+use {
+    bevy::{
+        prelude::{
+            App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource,
+            StartupSet,
+        },
+        reflect::TypeUuid,
+        time::Time,
+        DefaultPlugins,
     },
-    reflect::TypeUuid,
-    time::Time,
-    DefaultPlugins,
+    bevy_oddio::{builtins::sine, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal},
+    oddio::Sample,
 };
-use bevy_oddio::{builtins::sine, output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal};
-use oddio::Sample;
 
 #[derive(TypeUuid)]
 #[uuid = "54498976-f7db-4ee7-a2e6-5fee0fcadbfb"]
@@ -26,7 +29,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
-        .add_audio_source::<1, _, SineWithGain>()
+        .add_audio_source::<_, SineWithGain>()
         .add_startup_system(init_assets)
         .add_startup_system(play_sine_with_gain.in_base_set(StartupSet::PostStartup))
         .add_system(change_volume)

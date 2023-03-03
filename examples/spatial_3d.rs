@@ -1,18 +1,20 @@
-use bevy::{
-    prelude::{
-        default, shape, App, Assets, Camera3dBundle, Color, Commands, Component, Deref, Handle,
-        IntoSystemConfig, Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut,
-        Resource, StandardMaterial, StartupSet, Transform, Vec3, With,
+use {
+    bevy::{
+        prelude::{
+            default, shape, App, Assets, Camera3dBundle, Color, Commands, Component, Deref, Handle,
+            IntoSystemConfig, Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut,
+            Resource, StandardMaterial, StartupSet, Transform, Vec3, With,
+        },
+        time::Time,
+        DefaultPlugins,
     },
-    time::Time,
-    DefaultPlugins,
+    bevy_oddio::{
+        builtins::sine::{self, Sine},
+        output::spatial::SpatialAudioSink,
+        Audio, AudioPlugin,
+    },
+    oddio::{Sample, Spatial, SpatialOptions},
 };
-use bevy_oddio::{
-    builtins::sine::{self, Sine},
-    output::spatial::SpatialAudioSink,
-    Audio, AudioPlugin,
-};
-use oddio::{Sample, Spatial, SpatialOptions};
 
 fn main() {
     App::new()

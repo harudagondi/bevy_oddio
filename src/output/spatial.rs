@@ -1,24 +1,23 @@
-use std::mem::ManuallyDrop;
-
-use bevy::{
-    asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, Quat, Res, ResMut, Resource},
-    reflect::TypeUuid,
-    tasks::AsyncComputeTaskPool,
-    utils::HashMap,
+use {
+    super::get_host_info,
+    crate::{Audio, AudioToPlay, BufferedSettings, SpatialSettings, ToSignal},
+    bevy::{
+        asset::{Asset, Handle as BevyHandle, HandleId},
+        prelude::{Assets, Deref, DerefMut, Quat, Res, ResMut, Resource},
+        reflect::TypeUuid,
+        tasks::AsyncComputeTaskPool,
+        utils::HashMap,
+    },
+    cpal::{
+        traits::{DeviceTrait, StreamTrait},
+        Device, SupportedBufferSize, SupportedStreamConfigRange,
+    },
+    oddio::{
+        Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialBuffered,
+        SpatialOptions, SpatialScene, SplitSignal, Stop,
+    },
+    std::mem::ManuallyDrop,
 };
-use cpal::{
-    traits::{DeviceTrait, StreamTrait},
-    Device, SupportedBufferSize, SupportedStreamConfigRange,
-};
-use oddio::{
-    Frame, Handle as OddioHandle, Sample, Seek, Signal, Spatial, SpatialBuffered, SpatialOptions,
-    SpatialScene, SplitSignal, Stop,
-};
-
-use crate::{Audio, AudioToPlay, BufferedSettings, SpatialSettings, ToSignal};
-
-use super::get_host_info;
 
 /// Used internally in handling spatial audio output.
 #[derive(Resource)]
@@ -27,7 +26,6 @@ pub struct SpatialAudioOutput {
 }
 
 impl SpatialAudioOutput {
-    // FIXME: Update when bevy 0.9
     /// Rotate the listener.
     ///
     /// See [`SpatialSceneControl::set_listener_rotation`] for more information.

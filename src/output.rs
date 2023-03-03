@@ -1,21 +1,21 @@
-use std::mem::ManuallyDrop;
-
-use bevy::{
-    asset::{Asset, Handle as BevyHandle, HandleId},
-    prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
-    reflect::TypeUuid,
-    tasks::AsyncComputeTaskPool,
-    utils::HashMap,
-};
-use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
-    Device, SupportedBufferSize, SupportedStreamConfigRange,
-};
-use oddio::{Frame, Handle as OddioHandle, Mixer, Sample, Signal, SplitSignal, Stop};
-
-use crate::{
-    frames::{frame_n, FromFrame},
-    Audio, StreamConfig, ToSignal,
+use {
+    crate::{
+        frames::{frame_n, ArrayLength, AsArray},
+        Audio, StreamConfig, ToSignal,
+    },
+    bevy::{
+        asset::{Asset, Handle as BevyHandle, HandleId},
+        prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
+        reflect::TypeUuid,
+        tasks::AsyncComputeTaskPool,
+        utils::HashMap,
+    },
+    cpal::{
+        traits::{DeviceTrait, HostTrait, StreamTrait},
+        Device, SupportedBufferSize, SupportedStreamConfigRange,
+    },
+    oddio::{Frame, Handle as OddioHandle, Mixer, Signal, SplitSignal, Stop},
+    std::mem::ManuallyDrop,
 };
 
 /// Spatial audio output.
@@ -23,11 +23,11 @@ pub mod spatial;
 
 /// Used internally in handling audio output.
 #[derive(Resource)]
-pub struct AudioOutput<const N: usize, F: Frame + FromFrame<[Sample; N]>> {
+pub struct AudioOutput<F> {
     mixer_handle: OddioHandle<Mixer<F>>,
 }
 
-impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + 'static> AudioOutput<N, F> {
+impl<F: Frame + 'static> AudioOutput<F> {
     fn play<S>(&mut self, signal: S::Signal) -> AudioSink<S>
     where
         S: ToSignal + Asset,
@@ -37,9 +37,7 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + 'static> AudioOutput<N,
     }
 }
 
-impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> FromWorld
-    for AudioOutput<N, F>
-{
+impl<F: Frame + AsArray + Clone + 'static> FromWorld for AudioOutput<F> {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let task_pool = AsyncComputeTaskPool::get();
         let (mixer_handle, mixer) = oddio::split(oddio::Mixer::new());
@@ -58,12 +56,12 @@ impl<const N: usize, F: Frame + FromFrame<[Sample; N]> + Clone + 'static> FromWo
     }
 }
 
-fn play<const N: usize, F>(
+fn play<F>(
     mixer: SplitSignal<Mixer<F>>,
     device: &Device,
     supported_config_range: &SupportedStreamConfigRange,
 ) where
-    F: Frame + FromFrame<[Sample; N]> + 'static,
+    F: Frame + AsArray + 'static,
 {
     let buffer_size = match supported_config_range.buffer_size() {
         SupportedBufferSize::Range { min, max: _ } => cpal::BufferSize::Fixed(*min),
@@ -79,7 +77,7 @@ fn play<const N: usize, F>(
             &config,
             move |out_flat: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 assert_eq!(
-                    out_flat.len() % N,
+                    out_flat.len() % F::Array::LENGTH,
                     0,
                     "`N` must be a power of 2 that is less than or equal to the output buffer in cpal."
                 );
@@ -100,8 +98,8 @@ fn play<const N: usize, F>(
 
 /// System to play queued audio in [`Audio`].
 #[allow(clippy::needless_pass_by_value, clippy::missing_panics_doc)]
-pub fn play_queued_audio<const N: usize, F, Source>(
-    mut audio_output: ResMut<AudioOutput<N, F>>,
+pub fn play_queued_audio<F, Source>(
+    mut audio_output: ResMut<AudioOutput<F>>,
     audio: Res<Audio<F, Source>>,
     sources: Res<Assets<Source>>,
     mut sink_assets: ResMut<Assets<AudioSink<Source>>>,
@@ -109,7 +107,7 @@ pub fn play_queued_audio<const N: usize, F, Source>(
 ) where
     Source: ToSignal + Asset + Send,
     Source::Signal: Signal<Frame = F> + Send,
-    F: Frame + FromFrame<[Sample; N]> + 'static,
+    F: Frame + 'static,
 {
     let mut queue = audio.queue.write();
     let len = queue.len();

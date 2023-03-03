@@ -1,7 +1,8 @@
-use bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset};
-use minimp3::Decoder;
-
-use crate::{frames::Stereo, AudioSource};
+use {
+    crate::{frames::Stereo, AudioSource},
+    bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
+    minimp3::Decoder,
+};
 
 #[derive(Default)]
 pub struct Mp3Loader;

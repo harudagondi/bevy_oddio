@@ -1,9 +1,9 @@
-use std::{marker::PhantomData, sync::Arc};
-
-use bevy::reflect::TypeUuid;
-use oddio::{Frame, Frames};
-
-use crate::ToSignal;
+use {
+    crate::ToSignal,
+    bevy::reflect::TypeUuid,
+    oddio::{Frame, Frames},
+    std::{marker::PhantomData, sync::Arc},
+};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Constant`](oddio::Constant)
 #[derive(TypeUuid, Default)]
