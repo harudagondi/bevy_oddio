@@ -1,5 +1,7 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
+    prelude::{
+        App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource, StartupSet,
+    },
     DefaultPlugins,
 };
 use bevy_oddio::{
@@ -14,7 +16,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, play_sine)
+        .add_startup_system(play_sine.in_base_set(StartupSet::PostStartup))
         .run();
 }
 

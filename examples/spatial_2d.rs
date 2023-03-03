@@ -1,8 +1,8 @@
 use bevy::{
     prelude::{
         default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
-        Handle, Query, Res, ResMut, Resource, SpatialBundle, StartupStage, Transform, Vec2, Vec3,
-        With,
+        Handle, IntoSystemConfig, Query, Res, ResMut, Resource, SpatialBundle, StartupSet,
+        Transform, Vec2, Vec3, With,
     },
     sprite::{Sprite, SpriteBundle},
     time::Time,
@@ -20,7 +20,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, setup)
+        .add_startup_system(setup.in_base_set(StartupSet::PostStartup))
         .add_system(change_velocity)
         .run();
 }

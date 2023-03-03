@@ -1,5 +1,7 @@
 use bevy::{
-    prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
+    prelude::{
+        App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource, StartupSet,
+    },
     reflect::TypeUuid,
     DefaultPlugins,
 };
@@ -39,7 +41,7 @@ fn main() {
         .add_plugin(AudioPlugin::new())
         .add_audio_source::<2, _, Noise>()
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, play_noise)
+        .add_startup_system(play_noise.in_base_set(StartupSet::PostStartup))
         .run();
 }
 
