@@ -218,7 +218,7 @@ pub trait AudioApp {
     ///
     /// There are two requirements the signal must meet:
     ///
-    /// 1. Its frame must be [`Sample`]. Not [`Mono`].
+    /// 1. Its frame must be [`Sample`]. Not `[Sample; 1]`.
     /// 2. It must implement [`Seek`].
     ///
     /// See [`SpatialSceneControl::play`].
@@ -233,7 +233,7 @@ pub trait AudioApp {
     ///
     /// There is one requirement the signal must meet:
     ///
-    /// 1. Its frame must be [`Sample`]. Not [`Mono`].
+    /// 1. Its frame must be [`Sample`]. Not `[Sample; 1]`.
     ///
     /// See [`SpatialSceneControl::play_buffered`].
     ///
