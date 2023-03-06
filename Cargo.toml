@@ -20,7 +20,7 @@ hound = { version = "3.4", optional = true }
 lewton = { version = "0.10", optional = true }
 claxon = { version = "0.4", optional = true }
 minimp3 = { version = "0.5", optional = true }
-bevy_math = { git = "https://github.com/bevyengine/bevy.git", version = "0.9", features = ["mint"] }
+bevy_math = { version = "0.10", features = ["mint"] }
 
 [features]
 wav = ["hound"]
@@ -29,8 +29,7 @@ ogg = ["lewton"]
 flac = ["claxon"]
 
 [dependencies.bevy]
-# version = "0.9"
-git = "https://github.com/bevyengine/bevy.git"
+version = "0.10"
 default-features = false
 features = ["bevy_asset"]
 
@@ -38,8 +37,8 @@ features = ["bevy_asset"]
 fastrand = "1.8"
 
 [dev-dependencies.bevy]
-git = "https://github.com/bevyengine/bevy.git"
-# version = "0.9"
+# git = "https://github.com/bevyengine/bevy.git"
+version = "0.10"
 default-features = false
 features = [
   # "render",
