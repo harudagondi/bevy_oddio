@@ -2,8 +2,8 @@ use {
     bevy::{
         prelude::{
             default, shape, App, Assets, Camera3dBundle, Color, Commands, Component, Deref, Handle,
-            Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut, Resource,
-            StandardMaterial, StartupStage, Transform, Vec3, With,
+            IntoSystemConfig, Mesh, PbrBundle, PointLight, PointLightBundle, Query, Res, ResMut,
+            Resource, StandardMaterial, StartupSet, Transform, Vec3, With,
         },
         time::Time,
         DefaultPlugins,
@@ -21,7 +21,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, setup)
+        .add_startup_system(setup.in_base_set(StartupSet::PostStartup))
         .add_system(change_velocity)
         .run();
 }

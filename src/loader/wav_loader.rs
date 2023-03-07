@@ -1,8 +1,5 @@
 use {
-    crate::{
-        frames::{Mono, Stereo},
-        AudioSource,
-    },
+    crate::AudioSource,
     bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
 };
 
@@ -42,7 +39,7 @@ impl AssetLoader for WavLoader {
 
             match channels {
                 1 => {
-                    let samples = samples.into_iter().map(|s| Mono::from([s]));
+                    let samples = samples.into_iter().map(|s| [s]);
 
                     let frames = oddio::Frames::from_iter(source_sample_rate, samples);
 
@@ -52,9 +49,7 @@ impl AssetLoader for WavLoader {
                 }
                 2 => {
                     // channels are interleaved, so we put them together in stereo
-                    let samples_stereo = oddio::frame_stereo(&mut samples)
-                        .iter_mut()
-                        .map(|frame| Stereo::from(*frame));
+                    let samples_stereo = oddio::frame_stereo(&mut samples).iter().copied();
                     let frames = oddio::Frames::from_iter(source_sample_rate, samples_stereo);
 
                     let audio_source = AudioSource { frames };

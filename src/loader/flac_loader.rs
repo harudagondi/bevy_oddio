@@ -1,8 +1,5 @@
 use {
-    crate::{
-        frames::{Mono, Stereo},
-        AudioSource,
-    },
+    crate::AudioSource,
     bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
     claxon::FlacReader,
 };
@@ -40,7 +37,7 @@ impl AssetLoader for FlacLoader {
                 1 => {
                     let frames = oddio::Frames::from_iter(
                         sample_rate,
-                        samples.into_iter().map(|frame| Mono::from([frame])),
+                        samples.into_iter().map(|frame| [frame]),
                     );
 
                     let audio_source = AudioSource { frames };
@@ -50,9 +47,7 @@ impl AssetLoader for FlacLoader {
                 2 => {
                     let frames = oddio::Frames::from_iter(
                         sample_rate,
-                        oddio::frame_stereo(&mut samples)
-                            .iter_mut()
-                            .map(|frame| Stereo::from(*frame)),
+                        oddio::frame_stereo(&mut samples).iter().copied(),
                     );
 
                     let audio_source = AudioSource { frames };

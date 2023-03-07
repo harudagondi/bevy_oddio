@@ -26,7 +26,6 @@ pub struct SpatialAudioOutput {
 }
 
 impl SpatialAudioOutput {
-    // FIXME: Update when bevy 0.9
     /// Rotate the listener.
     ///
     /// See [`SpatialSceneControl::set_listener_rotation`] for more information.

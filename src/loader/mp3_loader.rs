@@ -1,7 +1,8 @@
 use {
-    crate::{frames::Stereo, AudioSource},
+    crate::AudioSource,
     bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
     minimp3::Decoder,
+    oddio::Sample,
 };
 
 #[derive(Default)]
@@ -41,10 +42,9 @@ impl AssetLoader for Mp3Loader {
                 }
             };
 
-            let samples: Vec<Stereo> = samples
+            let samples: Vec<[Sample; 2]> = samples
                 .into_iter()
                 .map(|[l, r]| [convert_i32_to_f32(l), convert_i32_to_f32(r)])
-                .map(Stereo::from)
                 .collect();
 
             #[allow(clippy::cast_sign_loss)]

@@ -1,6 +1,9 @@
 use {
     bevy::{
-        prelude::{App, Assets, Commands, Deref, Handle, Res, ResMut, Resource, StartupStage},
+        prelude::{
+            App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource,
+            StartupSet,
+        },
         reflect::TypeUuid,
         time::Time,
         DefaultPlugins,
@@ -26,9 +29,9 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AudioPlugin::new())
-        .add_audio_source::<1, _, SineWithGain>()
+        .add_audio_source::<_, SineWithGain>()
         .add_startup_system(init_assets)
-        .add_startup_system_to_stage(StartupStage::PostStartup, play_sine_with_gain)
+        .add_startup_system(play_sine_with_gain.in_base_set(StartupSet::PostStartup))
         .add_system(change_volume)
         .run();
 }

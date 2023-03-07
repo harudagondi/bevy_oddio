@@ -1,8 +1,5 @@
 use {
-    crate::{
-        frames::{Mono, Stereo},
-        AudioSource,
-    },
+    crate::AudioSource,
     bevy::asset::{AssetLoader, BoxedFuture, Error, LoadContext, LoadedAsset},
     lewton::inside_ogg::OggStreamReader,
     std::io::Cursor,
@@ -34,7 +31,7 @@ impl AssetLoader for OggLoader {
                 1 => {
                     let frames = oddio::Frames::from_iter(
                         ogg_stream_reader.ident_hdr.audio_sample_rate,
-                        samples.iter().map(|packet| [packet[0]]).map(Mono::from),
+                        samples.iter().map(|packet| [packet[0]]),
                     );
 
                     let audio_source = AudioSource { frames };
@@ -44,10 +41,7 @@ impl AssetLoader for OggLoader {
                 2 => {
                     let frames = oddio::Frames::from_iter(
                         ogg_stream_reader.ident_hdr.audio_sample_rate,
-                        samples
-                            .iter()
-                            .map(|packet| [packet[0], packet[1]])
-                            .map(Stereo::from),
+                        samples.iter().map(|packet| [packet[0], packet[1]]),
                     );
 
                     let audio_source = AudioSource { frames };
