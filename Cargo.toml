@@ -29,7 +29,7 @@ ogg = ["lewton"]
 flac = ["claxon"]
 
 [dependencies.bevy]
-version = "0.10"
+version = "0.11"
 default-features = false
 features = ["bevy_asset"]
 
@@ -38,7 +38,7 @@ fastrand = "2.0"
 
 [dev-dependencies.bevy]
 # git = "https://github.com/bevyengine/bevy.git"
-version = "0.10"
+version = "0.11"
 default-features = false
 features = [
   # "render",
