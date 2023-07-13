@@ -49,7 +49,9 @@ fn get_input(
     sink: Res<SineSink>,
     mut sinks: ResMut<Assets<AudioSink<Sine>>>,
 ) {
-    let Some(sink) = sinks.get_mut(&sink.0) else { return };
+    let Some(sink) = sinks.get_mut(&sink.0) else {
+        return;
+    };
 
     let control = sink.control::<oddio::Stop<_>, _>();
 

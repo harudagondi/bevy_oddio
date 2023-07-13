@@ -86,7 +86,9 @@ fn change_velocity(
     let normalized_time = time.elapsed_seconds_wrapped().sin() * 5.0;
     let delta = time.delta_seconds();
 
-    let Some(sink) = sinks.get_mut(&sink.0) else { return };
+    let Some(sink) = sinks.get_mut(&sink.0) else {
+        return;
+    };
 
     let prev_pos = emitter.translation;
     let position = Vec3::new(normalized_time, prev_pos.y, prev_pos.z);
