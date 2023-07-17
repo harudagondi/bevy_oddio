@@ -6,7 +6,7 @@ use {
     bevy::{
         asset::{Asset, Handle as BevyHandle, HandleId},
         prelude::{Assets, Deref, DerefMut, FromWorld, Res, ResMut, Resource},
-        reflect::TypeUuid,
+        reflect::{TypePath, TypeUuid},
         tasks::AsyncComputeTaskPool,
         utils::HashMap,
     },
@@ -130,7 +130,7 @@ pub fn play_queued_audio<F, Source>(
 }
 
 /// Asset that controls the playback of the sound.
-#[derive(TypeUuid, Deref, DerefMut)]
+#[derive(TypeUuid, TypePath, Deref, DerefMut)]
 #[uuid = "82317ee9-8f2d-4973-bb7f-8f4a5b74cc55"]
 pub struct AudioSink<Source: ToSignal + Asset>(
     ManuallyDrop<OddioHandle<Stop<<Source as ToSignal>::Signal>>>,

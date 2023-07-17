@@ -12,9 +12,7 @@
 use {
     bevy::{
         asset::{Asset, HandleId},
-        prelude::{
-            AddAsset, App, CoreSet, Handle as BevyHandle, IntoSystemConfig, Plugin, Resource,
-        },
+        prelude::{AddAsset, App, Handle as BevyHandle, Plugin, Resource},
         reflect::TypeUuid,
     },
     cpal::SupportedStreamConfigRange,
@@ -42,6 +40,7 @@ pub mod builtins;
 /// Newtypes for working around [bevyengine/bevy#5432](https://github.com/bevyengine/bevy/issues/5432)
 pub mod frames;
 
+use bevy::{prelude::PostUpdate, reflect::TypePath};
 pub use frames::*;
 
 mod loader;
@@ -121,7 +120,7 @@ where
 /// Source of audio data.
 ///
 /// Accepts an atomically reference-counted [`Frames`] with two channels.
-#[derive(Clone, TypeUuid)]
+#[derive(Clone, TypeUuid, TypePath)]
 #[uuid = "2b024eb6-88f1-4001-b678-0446f2fab0f4"]
 pub struct AudioSource<F: Frame> {
     /// Raw audio data. See [`Frames`].
@@ -257,7 +256,7 @@ impl AudioApp for App {
             .add_asset::<AudioSink<Source>>()
             .init_resource::<Audio<F, Source>>()
             .init_resource::<AudioSinks<Source>>()
-            .add_system(play_queued_audio::<F, Source>.in_base_set(CoreSet::PostUpdate))
+            .add_systems(PostUpdate, play_queued_audio::<F, Source>)
     }
 
     fn add_spatial_audio_source<Source>(&mut self) -> &mut Self
@@ -269,7 +268,7 @@ impl AudioApp for App {
             .add_asset::<SpatialAudioSink<Source>>()
             .init_resource::<Audio<Sample, Source>>()
             .init_resource::<SpatialAudioSinks<Source>>()
-            .add_system(play_queued_spatial_audio::<Source>.in_base_set(CoreSet::PostUpdate))
+            .add_systems(PostUpdate, play_queued_spatial_audio::<Source>)
     }
 
     fn add_spatial_buffered_audio_source<Source>(&mut self) -> &mut Self
@@ -281,9 +280,7 @@ impl AudioApp for App {
             .add_asset::<SpatialBufferedAudioSink<Source>>()
             .init_resource::<Audio<Sample, Source>>()
             .init_resource::<SpatialBufferedAudioSinks<Source>>()
-            .add_system(
-                play_queued_spatial_buffered_audio::<Source>.in_base_set(CoreSet::PostUpdate),
-            )
+            .add_systems(PostUpdate, play_queued_spatial_buffered_audio::<Source>)
     }
 }
 

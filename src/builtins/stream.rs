@@ -1,7 +1,12 @@
-use {crate::ToSignal, bevy::reflect::TypeUuid, oddio::Frame, std::marker::PhantomData};
+use {
+    crate::ToSignal,
+    bevy::reflect::{TypePath, TypeUuid},
+    oddio::Frame,
+    std::marker::PhantomData,
+};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Stream`](oddio::Stream)
-#[derive(TypeUuid, Default)]
+#[derive(TypeUuid, TypePath, Default)]
 #[uuid = "f391d20f-7654-403a-b7c9-3f3c7991138a"]
 pub struct Stream<T> {
     _phantom: PhantomData<T>,

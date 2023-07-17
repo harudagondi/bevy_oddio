@@ -4,7 +4,7 @@ use {
     bevy::{
         asset::{Asset, Handle as BevyHandle, HandleId},
         prelude::{Assets, Deref, DerefMut, Quat, Res, ResMut, Resource},
-        reflect::TypeUuid,
+        reflect::{TypePath, TypeUuid},
         tasks::AsyncComputeTaskPool,
         utils::HashMap,
     },
@@ -198,7 +198,7 @@ pub fn play_queued_spatial_buffered_audio<Source>(
 }
 
 /// Asset that controls the playback of the spatial sound.
-#[derive(TypeUuid, Deref, DerefMut)]
+#[derive(TypeUuid, TypePath, Deref, DerefMut)]
 #[uuid = "4b135d1c-68cb-4104-b5c5-4be8bea6c46c"]
 pub struct SpatialAudioSink<Source: ToSignal + Asset>(
     ManuallyDrop<OddioHandle<Spatial<Stop<<Source as ToSignal>::Signal>>>>,
@@ -217,7 +217,7 @@ impl<Source: ToSignal + Asset> Default for SpatialAudioSinks<Source> {
 }
 
 /// Asset that controls the playback of the spatial sound.
-#[derive(TypeUuid, Deref, DerefMut)]
+#[derive(TypeUuid, TypePath, Deref, DerefMut)]
 #[uuid = "4b135d1c-68cb-4104-b5c5-4be8bea6c46c"]
 pub struct SpatialBufferedAudioSink<Source: ToSignal + Asset>(
     ManuallyDrop<OddioHandle<SpatialBuffered<Stop<<Source as ToSignal>::Signal>>>>,

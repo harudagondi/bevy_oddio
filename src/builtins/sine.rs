@@ -1,7 +1,10 @@
-use {crate::ToSignal, bevy::reflect::TypeUuid};
+use {
+    crate::ToSignal,
+    bevy::reflect::{TypePath, TypeUuid},
+};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Sine`](oddio::Sine)
-#[derive(TypeUuid)]
+#[derive(TypeUuid, TypePath)]
 #[uuid = "14597aba-d411-4bfc-b227-09cf5f88202f"]
 pub struct Sine;
 

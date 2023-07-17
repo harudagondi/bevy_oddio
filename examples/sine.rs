@@ -1,8 +1,7 @@
 use {
     bevy::{
         prelude::{
-            App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource,
-            StartupSet,
+            App, Assets, Commands, Deref, Handle, PostStartup, Res, ResMut, Resource, Startup,
         },
         DefaultPlugins,
     },
@@ -17,9 +16,9 @@ use {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin::new())
-        .add_startup_system(init_assets)
-        .add_startup_system(play_sine.in_base_set(StartupSet::PostStartup))
+        .add_plugins(AudioPlugin::new())
+        .add_systems(Startup, init_assets)
+        .add_systems(PostStartup, play_sine)
         .run();
 }
 

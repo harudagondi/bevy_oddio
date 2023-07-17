@@ -1,7 +1,11 @@
-use {crate::ToSignal, bevy::reflect::TypeUuid, std::marker::PhantomData};
+use {
+    crate::ToSignal,
+    bevy::reflect::{TypePath, TypeUuid},
+    std::marker::PhantomData,
+};
 
 /// [`Asset`](bevy::asset::Asset) form of [`Constant`](oddio::Constant)
-#[derive(TypeUuid, Default)]
+#[derive(TypeUuid, TypePath, Default)]
 #[uuid = "6bcf912a-91d0-46d3-bd55-e81123bbc591"]
 pub struct Constant<T> {
     _phantom: PhantomData<T>,

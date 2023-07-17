@@ -1,17 +1,16 @@
 use {
     bevy::{
         prelude::{
-            App, Assets, Commands, Deref, Handle, IntoSystemConfig, Res, ResMut, Resource,
-            StartupSet,
+            App, Assets, Commands, Deref, Handle, PostStartup, Res, ResMut, Resource, Startup,
         },
-        reflect::TypeUuid,
+        reflect::{TypePath, TypeUuid},
         DefaultPlugins,
     },
     bevy_oddio::{output::AudioSink, Audio, AudioApp, AudioPlugin, ToSignal},
     oddio::{Sample, Signal},
 };
 
-#[derive(TypeUuid)]
+#[derive(TypeUuid, TypePath)]
 #[uuid = "7cc24057-b499-4f7a-8f8a-e37dfa64be32"]
 struct Noise;
 #[derive(Resource)]
@@ -41,10 +40,10 @@ impl ToSignal for Noise {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin::new())
+        .add_plugins(AudioPlugin::new())
         .add_audio_source::<_, Noise>()
-        .add_startup_system(init_assets)
-        .add_startup_system(play_noise.in_base_set(StartupSet::PostStartup))
+        .add_systems(Startup, init_assets)
+        .add_systems(PostStartup, play_noise)
         .run();
 }
 
