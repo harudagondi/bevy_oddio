@@ -2,8 +2,8 @@ use {
     bevy::{
         prelude::{
             default, App, Assets, BuildChildren, Camera2dBundle, Color, Commands, Component, Deref,
-            Handle, IntoSystemConfig, Query, Res, ResMut, Resource, SpatialBundle, StartupSet,
-            Transform, Vec2, Vec3, With,
+            Handle, PostStartup, Query, Res, ResMut, Resource, SpatialBundle, Startup, Transform,
+            Update, Vec2, Vec3, With,
         },
         sprite::{Sprite, SpriteBundle},
         time::Time,
@@ -20,10 +20,10 @@ use {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(AudioPlugin::new())
-        .add_startup_system(init_assets)
-        .add_startup_system(setup.in_base_set(StartupSet::PostStartup))
-        .add_system(change_velocity)
+        .add_plugins(AudioPlugin::new())
+        .add_systems(Startup, init_assets)
+        .add_systems(PostStartup, setup)
+        .add_systems(Update, change_velocity)
         .run();
 }
 
@@ -86,7 +86,9 @@ fn change_velocity(
     let normalized_time = time.elapsed_seconds_wrapped().sin() * 5.0;
     let delta = time.delta_seconds();
 
-    let Some(sink) = sinks.get_mut(&sink.0) else { return };
+    let Some(sink) = sinks.get_mut(&sink.0) else {
+        return;
+    };
 
     let prev_pos = emitter.translation;
     let position = Vec3::new(normalized_time, prev_pos.y, prev_pos.z);

@@ -1,12 +1,12 @@
 use {
     crate::ToSignal,
-    bevy::reflect::TypeUuid,
+    bevy::reflect::{TypePath, TypeUuid},
     oddio::{Frame, Frames},
     std::{marker::PhantomData, sync::Arc},
 };
 
 /// [`Asset`](bevy::asset::Asset) form of [`Constant`](oddio::Constant)
-#[derive(TypeUuid, Default)]
+#[derive(TypeUuid, TypePath, Default)]
 #[uuid = "f391d20f-7654-403a-b7c9-3f3c7991138a"]
 pub struct Cycle<T> {
     _phantom: PhantomData<T>,
