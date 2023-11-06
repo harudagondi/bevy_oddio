@@ -20,7 +20,7 @@ hound = { version = "3.4", optional = true }
 lewton = { version = "0.10", optional = true }
 claxon = { version = "0.4", optional = true }
 minimp3 = { version = "0.5", optional = true }
-bevy_math = { version = "0.11", features = ["mint"] }
+bevy_math = { version = "0.12", features = ["mint"] }
 
 [features]
 wav = ["hound"]
